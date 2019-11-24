@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -41,7 +43,7 @@ namespace CSharpNetworking
                 await socket.ConnectAsync(localEndPoint);
                 OnSocketConnected.Invoke(this, null);
                 Console.WriteLine($"Connected!");
-                stream = WebSocket.GetNetworkStream(socket, uri);
+                stream = GetNetworkStream();
                 var doNotWait = StartHandshakeWithServer();
             }
             catch (Exception exception)
@@ -116,7 +118,7 @@ namespace CSharpNetworking
 
         public async Task SendAsync(string message)
         {
-            var bytes = WebSocket.StringToBytes(message);
+            var bytes = WebSocket.StringToBytes(message, false);
             await stream.WriteAsync(bytes, 0, bytes.Length);
             Console.WriteLine($"WebSocketClient: Sent to {uri}: {message}");
         }
@@ -140,6 +142,27 @@ namespace CSharpNetworking
             OnError.Invoke(this, exception);
             OnDisconnected.Invoke(this, null);
             Console.WriteLine($"WebSocketClient: Unexpectadely disconnected. {exception.Message}");
+        }
+
+        private Stream GetNetworkStream()
+        {
+            var host = uri.Host;
+            stream = new NetworkStream(socket);
+            if (uri.Scheme.ToLower() == "wss")
+            {
+                stream = new SslStream(stream, false, ValidateServerCertificate, null);
+                ((SslStream)stream).AuthenticateAsClient(host);
+            }
+            return stream;
+        }
+
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            if (sslPolicyErrors == SslPolicyErrors.None)
+                return true;
+
+            Console.WriteLine($"WebSocketClient: Certificate error: {sslPolicyErrors}");
+            return false;
         }
     }
 }

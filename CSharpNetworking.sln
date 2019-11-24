@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleTCPServer", "Example
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleWebSocketServer", "ExampleWebSocketServer\ExampleWebSocketServer.csproj", "{AC162B3F-DEF2-4963-9B83-DBB3CB818341}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleWebSocketClient", "ExampleWebSocketClient\ExampleWebSocketClient.csproj", "{394C2339-AB29-4871-A3B1-244CBDC49E69}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{AC162B3F-DEF2-4963-9B83-DBB3CB818341}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC162B3F-DEF2-4963-9B83-DBB3CB818341}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC162B3F-DEF2-4963-9B83-DBB3CB818341}.Release|Any CPU.Build.0 = Release|Any CPU
+		{394C2339-AB29-4871-A3B1-244CBDC49E69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{394C2339-AB29-4871-A3B1-244CBDC49E69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{394C2339-AB29-4871-A3B1-244CBDC49E69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{394C2339-AB29-4871-A3B1-244CBDC49E69}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
