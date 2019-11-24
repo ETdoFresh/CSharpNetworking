@@ -21,3 +21,10 @@ Each protocol implements interfaces IServer or IClient which require that the pr
 - `OnMessage(object client, Message message)` When the client receives a message from the server
 - `OnDisconnected(object client)` When the client disconnects from the server
 - `OnError(Exception exception)` When there is an exception on the client
+
+## Message and Message\<T> Classes
+The Message and Message\<T> classes contain the data transferred between server and client. It contains the following fields:
+
+- `string data` A UTF8 encoded message
+- `byte[] rawData` An array of bytes representing the message
+- `T client` A generically typed client (only on Message\<T>)
