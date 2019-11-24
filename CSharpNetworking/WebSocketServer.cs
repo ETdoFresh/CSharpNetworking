@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
+    [Serializable]
     public class WebSocketServer : IServer<SocketStream>
     {
         private enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
@@ -29,12 +30,11 @@ namespace CSharpNetworking
 
         public WebSocketServer(string uriString)
         {
-            StartServer(uriString);
+            uri = new Uri(uriString);
         }
 
-        private void StartServer(string uriString)
+        public void Open()
         {
-            uri = new Uri(uriString);
             var host = uri.Host;
             var port = uri.Port;
 

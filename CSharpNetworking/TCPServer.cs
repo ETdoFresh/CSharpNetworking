@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
+    [Serializable]
     public class TCPServer : IServer<Socket>
     {
+        public string hostNameOrAddress;
+        public int port;
         public Socket socket;
 
         public event EventHandler OnServerOpen = delegate { };
@@ -22,10 +25,11 @@ namespace CSharpNetworking
 
         public TCPServer(string hostNameOrAddress, int port)
         {
-            StartServer(hostNameOrAddress, port);
+            this.hostNameOrAddress = hostNameOrAddress;
+            this.port = port;
         }
 
-        private void StartServer(string hostNameOrAddress, int port)
+        public void Open()
         {
             IPEndPoint localEndPoint = null;
             if (hostNameOrAddress != "")

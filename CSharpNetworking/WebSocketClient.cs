@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
+    [Serializable]
     public class WebSocketClient : IClient
     {
         public Uri uri;
@@ -25,12 +26,16 @@ namespace CSharpNetworking
 
         public WebSocketClient(string uriString)
         {
-            var doNotWait = Connect(uriString);
+            uri = new Uri(uriString);
         }
 
-        private async Task Connect(string uriString)
+        public void Open()
         {
-            uri = new Uri(uriString);
+            var doNotWait = OpenAsync();
+        }
+
+        public async Task OpenAsync()
+        {
             var host = uri.Host;
             var port = uri.Port;
             try

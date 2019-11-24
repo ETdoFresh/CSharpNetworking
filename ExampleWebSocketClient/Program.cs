@@ -17,6 +17,7 @@ namespace ExampleWebSocketClient
 
             var client = new WebSocketClient(uri);
             client.OnOpen += (object sender, EventArgs e) => { client.Send("Hello World!"); };
+            client.Open();
             Console.ReadKey();
             
             client.Send("Hello World 2!");

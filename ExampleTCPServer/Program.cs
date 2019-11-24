@@ -14,6 +14,7 @@ namespace Example
         {
             var port = 9999;
             var server = new TCPServer(port);
+            server.Open();
             Console.ReadKey();
         }
     }

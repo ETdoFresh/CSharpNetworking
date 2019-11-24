@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -8,8 +7,11 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
+    [Serializable]
     public class TCPClient : IClient
     {
+        public string hostNameOrAddress;
+        public int port;
         public Socket socket;
 
         public event EventHandler OnOpen = delegate { };
@@ -21,10 +23,16 @@ namespace CSharpNetworking
 
         public TCPClient(string hostNameOrAddress, int port)
         {
-            var doNotWait = Connect(hostNameOrAddress, port);
+            this.hostNameOrAddress = hostNameOrAddress;
+            this.port = port;
         }
 
-        public async Task Connect(string hostNameOrAddress, int port)
+        public void Open()
+        {
+            var doNotWait = OpenAsync();
+        }
+
+        public async Task OpenAsync()
         {
             try
             {
