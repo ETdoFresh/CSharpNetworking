@@ -4,27 +4,29 @@ namespace CSharpNetworking
 {
     public class Message
     {
-        public byte[] rawData;
+        public byte[] bytes;
         public string data;
 
-        public Message(byte[] rawData)
+        public Message(byte[] bytes)
         {
-            this.rawData = rawData;
-            data = Encoding.UTF8.GetString(rawData);
+            this.bytes = bytes;
+            data = Encoding.UTF8.GetString(bytes);
         }
 
         public Message(string data)
         {
             this.data = data;
-            rawData = Encoding.UTF8.GetBytes(data);
+            bytes = Encoding.UTF8.GetBytes(data);
         }
+
+        public override string ToString() => data;
     }
 
     public class Message<TClient> : Message
     {
         public TClient client;
 
-        public Message(TClient client, byte[] rawData) : base(rawData)
+        public Message(TClient client, byte[] bytes) : base(bytes)
         {
             this.client = client;
         }

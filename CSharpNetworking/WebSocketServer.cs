@@ -17,9 +17,8 @@ namespace CSharpNetworking
     {
         private enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
 
-        const string HTTP_TERMINATOR = "\r\n\r\n";
+        public Uri uri;
         public Socket socket;
-        private Uri uri;
 
         public event EventHandler OnServerOpen = delegate { };
         public event EventHandler<SocketStream> OnOpen = delegate { };
@@ -55,7 +54,7 @@ namespace CSharpNetworking
             var doNotWait = AcceptNewClient();
         }
 
-        public void StopServer()
+        public void Close()
         {
             if (socket != null)
             {
@@ -90,7 +89,7 @@ namespace CSharpNetworking
                     if (bytesRead == 0) break;
 
                     message += Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    if (message.Contains(HTTP_TERMINATOR))
+                    if (message.Contains(Terminator.HTTP))
                     {
                         Console.WriteLine($"WebSocketServer: A HandShake received from {client.IP}:{client.Port}...");
                         //var messages = message.Split(new[] { HTTP_TERMINATOR }, StringSplitOptions.RemoveEmptyEntries);
@@ -187,17 +186,23 @@ namespace CSharpNetworking
 
         public void Send(SocketStream client, string message)
         {
-            var doNotWait = SendAsync(client, message);
+            Send(client, Encoding.UTF8.GetBytes(message));
         }
 
-        public static async Task SendAsync(SocketStream client, string message)
+        public void Send(SocketStream client, byte[] bytes)
         {
-            var bytes = WebSocket.StringToBytes(message, false);
-            await client.stream.WriteAsync(bytes, 0, bytes.Length);
-            Console.WriteLine($"WebSocketServer: Sent to {client.IP}:{client.Port}: {message}");
+            var doNotWait = SendAsync(client, bytes);
         }
 
-        public Stream GetNetworkStream(Socket socket)
+        public static async Task SendAsync(SocketStream client, byte[] bytes)
+        {
+            var message = Encoding.UTF8.GetString(bytes);
+            bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
+            await client.stream.WriteAsync(bytes, 0, bytes.Length);
+            Console.WriteLine($"WebSocketClient: Sent to {client.IP}:{client.Port}: {message}");
+        }
+
+        private Stream GetNetworkStream(Socket socket)
         {
             var host = uri.Host;
             var streamType = StreamType.Unsecured;

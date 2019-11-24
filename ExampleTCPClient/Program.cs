@@ -18,7 +18,7 @@ namespace ExampleTCPClient
 
             var client = new TCPClient(port);
             Console.ReadKey();
-            client.Disconnect();
+            client.Close();
         }
     }
 }

@@ -28,7 +28,7 @@ namespace CSharpNetworking
             var doNotWait = Connect(uriString);
         }
 
-        public async Task Connect(string uriString)
+        private async Task Connect(string uriString)
         {
             uri = new Uri(uriString);
             var host = uri.Host;
@@ -52,7 +52,7 @@ namespace CSharpNetworking
             }
         }
 
-        public async Task StartHandshakeWithServer()
+        private async Task StartHandshakeWithServer()
         {
             var httpEOF = Encoding.UTF8.GetBytes("\r\n\r\n");
             var received = new List<byte>();
@@ -78,7 +78,7 @@ namespace CSharpNetworking
             var doNotWait = StartReceivingFromServer();
         }
 
-        public async Task StartReceivingFromServer()
+        private async Task StartReceivingFromServer()
         {
             var received = new List<byte>();
             var buffer = new byte[2048];
@@ -92,8 +92,9 @@ namespace CSharpNetworking
                     {
                         while (received.Count >= WebSocket.PacketLength(received))
                         {
-                            var message = WebSocket.BytesToString(received.ToArray());
-                            OnMessage.Invoke(this, new Message(message));
+                            var bytes = WebSocket.NetworkingBytesToByteArray(received.ToArray());
+                            var message = new Message(bytes);
+                            OnMessage.Invoke(this, message);
                             Console.WriteLine($"WebSocketClient: Received from {uri}: {message}");
                             received.RemoveRange(0, (int)WebSocket.PacketLength(received));
                         }
@@ -107,23 +108,29 @@ namespace CSharpNetworking
             }
             finally
             {
-                Disconnect();
+                Close();
             }
         }
 
         public void Send(string message)
         {
-            var doNotWait = SendAsync(message);
+            Send(Encoding.UTF8.GetBytes(message));
         }
 
-        public async Task SendAsync(string message)
+        public void Send(byte[] bytes)
         {
-            var bytes = WebSocket.StringToBytes(message);
+            var doNotWait = SendAsync(bytes);
+        }
+
+        public async Task SendAsync(byte[] bytes)
+        {
+            var message = Encoding.UTF8.GetString(bytes);
+            bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
             await stream.WriteAsync(bytes, 0, bytes.Length);
             Console.WriteLine($"WebSocketClient: Sent to {uri}: {message}");
         }
 
-        public void Disconnect()
+        public void Close()
         {
             try
             {
@@ -133,11 +140,11 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                DisconnectError(socket, exception);
+                CloseError(socket, exception);
             }
         }
 
-        private void DisconnectError(Socket socket, Exception exception)
+        private void CloseError(Socket socket, Exception exception)
         {
             OnError.Invoke(this, exception);
             OnClose.Invoke(this, null);

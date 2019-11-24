@@ -25,7 +25,7 @@ namespace ExampleWebSocketClient
             client.Send("Hello World 3!");
             Console.ReadKey();
 
-            client.Disconnect();
+            client.Close();
         }
     }
 }

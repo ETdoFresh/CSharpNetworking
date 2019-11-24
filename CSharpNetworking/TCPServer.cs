@@ -9,8 +9,6 @@ namespace CSharpNetworking
 {
     public class TCPServer : IServer<Socket>
     {
-        const string TERMINATOR = "\r\n";
-        const string TERMINATOR_CONSOLE = "{\\r\\n}";
         public Socket socket;
 
         public event EventHandler OnServerOpen = delegate { };
@@ -50,7 +48,7 @@ namespace CSharpNetworking
             Console.WriteLine($"TCPServer: Listening...");
         }
 
-        public void StopServer()
+        public void Close()
         {
             if (socket != null)
             {
@@ -89,17 +87,17 @@ namespace CSharpNetworking
                     if (bytesRead == 0) break;
 
                     receivedMessage += Encoding.UTF8.GetString(buffer.Array, 0, bytesRead);
-                    if (receivedMessage.Contains(TERMINATOR))
+                    if (receivedMessage.Contains(Terminator.VALUE))
                     {
-                        var messages = receivedMessage.Split(new[] { TERMINATOR }, StringSplitOptions.RemoveEmptyEntries);
+                        var messages = receivedMessage.Split(new[] { Terminator.VALUE }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var message in messages)
                         {
-                            Console.WriteLine($"TCPServer: Received from {ip}:{port}: {message}{TERMINATOR_CONSOLE}");
+                            Console.WriteLine($"TCPServer: Received from {ip}:{port}: {message}{Terminator.CONSOLE}");
                             OnMessage.Invoke(this, new Message<Socket>(socket, message));
                         }
                     }
-                    while (receivedMessage.Contains(TERMINATOR))
-                        receivedMessage = receivedMessage.Substring(receivedMessage.IndexOf(TERMINATOR) + TERMINATOR.Length);
+                    while (receivedMessage.Contains(Terminator.VALUE))
+                        receivedMessage = receivedMessage.Substring(receivedMessage.IndexOf(Terminator.VALUE) + Terminator.VALUE.Length);
                 }
             }
             catch (Exception exception)
@@ -138,17 +136,24 @@ namespace CSharpNetworking
 
         public void Send(Socket socket, string message)
         {
-            var doNotWait = SendAsync(socket, message);
+            Send(socket, Encoding.UTF8.GetBytes(message));
         }
 
-        public async Task SendAsync(Socket socket, string message)
+        public void Send(Socket socket, byte[] bytes)
+        {
+            var doNotWait = SendAsync(socket, bytes);
+        }
+
+        public async Task SendAsync(Socket socket, byte[] bytes)
         {
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
-            var bytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(message + TERMINATOR));
-            await socket.SendAsync(bytes, SocketFlags.None);
-            Console.WriteLine($"TCPServer: Sent to {ip}:{port}: {message}{TERMINATOR_CONSOLE}");
+            var bytesWithTerminator = bytes.Concat(Terminator.BYTES);
+            var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
+            await socket.SendAsync(bytesArraySegment, SocketFlags.None);
+            var message = Encoding.UTF8.GetString(bytes);
+            Console.WriteLine($"TCPClient: Sent to {ip}:{port}: {message}{Terminator.CONSOLE}");
         }
     }
 }

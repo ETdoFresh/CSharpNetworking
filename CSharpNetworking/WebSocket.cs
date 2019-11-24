@@ -163,5 +163,95 @@ namespace CSharpNetworking
             var closeConnectionRequested = opCode == 0x08;
             return closeConnectionRequested;
         }
+
+        public static byte[] ByteArrayToNetworkBytes(byte[] byteArray, bool masked = true)
+        {
+            var mask = masked ? 0b_1000_0000 : 0;
+
+            List<byte> bytes;
+
+            // Bit description:
+            // 0: Is final fragment of message
+            // 1-3: Reserved bits. Must be 0.
+            // 4-7: Opcode [0: continue, 1: text, 2: binary, 8: close, 9: ping, 10: pong]
+            bytes = new List<byte> { 0b_1000_0010 };
+
+            // 8: Maskbit
+            // 9-15: Payload Length
+            // 16-31: Extended Payload
+            // 32-64: Extended Payload 2
+            if (byteArray.Length < 126)
+            {
+                bytes.Add((byte)(byteArray.Length + mask));
+            }
+            else if (byteArray.Length < 65536)
+            {
+                bytes.Add((byte)(126 + mask));
+                bytes.AddRange(BitConverter.GetBytes((ushort)byteArray.Length).Reverse());
+            }
+            else if ((ulong)byteArray.Length <= 18446744073709551615)
+            {
+                bytes.Add((byte)(127 + mask));
+                bytes.AddRange(BitConverter.GetBytes((ulong)byteArray.Length).Reverse());
+            }
+
+            // +0 or +4: If masked, 4-byte mask
+            var maskBytes = new List<byte>();
+            if (masked)
+            {
+                for (int i = 0; i < 4; i++)
+                    maskBytes.Add((byte)Random.Next(-128, 128));
+                bytes.AddRange(maskBytes);
+            }
+
+            // Mask data if necessary
+            if (masked)
+                for (int i = 0; i < byteArray.Length; i++)
+                {
+                    var j = i % 4;
+                    byteArray[i] = (byte)(byteArray[i] ^ maskBytes[j]);
+                }
+
+            bytes.AddRange(byteArray);
+            return bytes.ToArray();
+        }
+
+        public static byte[] NetworkingBytesToByteArray(byte[] bytes)
+        {
+            var unmask = (bytes[1] & 0b_1000_0000) > 0;
+            long length = bytes[1] & 0b_0111_1111;
+            var index = 2;
+            if (length == 126)
+            {
+                var shrt = bytes.Skip(index).Take(2).Reverse().ToArray();
+                length = BitConverter.ToInt16(shrt, 0);
+                index += 2;
+            }
+            if (length == 127)
+            {
+                var lng = bytes.Skip(index).Take(8).Reverse().ToArray();
+                length = BitConverter.ToInt64(lng, 0);
+                index += 8;
+            }
+
+            var maskBytes = new List<byte>();
+            if (unmask)
+                for (int i = 0; i < 4; i++)
+                    maskBytes.Add(bytes[index + i]);
+
+            index += unmask ? 4 : 0;
+
+            var byteArray = new List<byte>();
+            for (int i = 0; i < length; i++)
+                byteArray.Add(bytes[index + i]);
+
+            if (unmask)
+                for (int i = 0; i < length; i++)
+                {
+                    var j = i % 4;
+                    byteArray[i] = (byte)(byteArray[i] ^ maskBytes[j]);
+                }
+            return byteArray.ToArray();
+        }
     }
 }
