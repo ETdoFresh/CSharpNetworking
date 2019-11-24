@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0AFCD668-3C02-4E85-A87C-82A85660FA2B}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>CSharpNetworking</RootNamespace>
-    <AssemblyName>CSharpNetworking</AssemblyName>
+    <ProjectGuid>{AC162B3F-DEF2-4963-9B83-DBB3CB818341}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ExampleWebSocketServer</RootNamespace>
+    <AssemblyName>ExampleWebSocketServer</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -32,9 +32,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,21 +43,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IClient.cs" />
-    <Compile Include="IServer.cs" />
-    <Compile Include="Message.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SocketStream.cs" />
-    <Compile Include="TCPClient.cs" />
-    <Compile Include="WebSocket.cs" />
-    <Compile Include="WebSocketServer.cs" />
-    <Compile Include="TCPServer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\README.md">
-      <Link>README.md</Link>
+    <None Include="..\letsencrypt.pfx">
+      <Link>letsencrypt.pfx</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\localhost.pfx">
+      <Link>localhost.pfx</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CSharpNetworking\CSharpNetworking.csproj">
+      <Project>{0afcd668-3c02-4e85-a87c-82a85660fa2b}</Project>
+      <Name>CSharpNetworking</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

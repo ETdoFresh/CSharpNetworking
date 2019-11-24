@@ -45,8 +45,20 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
+            OnListening.Invoke(this, null);
             var doNotWait = AcceptNewClient();
             Console.WriteLine($"TCPServer: Listening...");
+        }
+
+        public void StopServer()
+        {
+            if (socket != null)
+            {
+                socket.Close();
+                socket.Dispose();
+            }
+            OnStopListening.Invoke(this, null);
+            Console.WriteLine($"TCPServer: Stop Listening...");
         }
 
         private async Task AcceptNewClient()

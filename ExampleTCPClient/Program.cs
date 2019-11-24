@@ -16,9 +16,9 @@ namespace ExampleTCPClient
             Console.WriteLine($"This is an example TCP Client. Press any key to connect to tcp://{host}:{port}");
             Console.ReadKey();
 
-            var tcpClient = new TCPClient(port);
+            var client = new TCPClient(port);
             Console.ReadKey();
-            tcpClient.Disconnect();
+            client.Disconnect();
         }
     }
 }
