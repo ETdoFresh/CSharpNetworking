@@ -16,9 +16,8 @@ namespace CSharpNetworking
     public class WebSocketServer : IServer<SocketStream>
     {
         const string HTTP_TERMINATOR = "\r\n\r\n";
-        public enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
-        public StreamType streamType = StreamType.Unsecured;
         public Socket socket;
+        private Uri uri;
 
         public event EventHandler OnListening = delegate { };
         public event EventHandler<SocketStream> OnAccepted = delegate { };
@@ -34,26 +33,17 @@ namespace CSharpNetworking
 
         private void StartServer(string uriString)
         {
-            var uri = new Uri(uriString);
+            uri = new Uri(uriString);
             var host = uri.Host;
             var port = uri.Port;
 
-            if (uri.Scheme.ToLower() == "wss")
-                if (host.ToLower() == "localhost") streamType = StreamType.SecuredLocalhost;
-                else if (host.ToLower() != "localhost") streamType = StreamType.SecuredRemote;
-
-            IPEndPoint localEndPoint = null;
+            Console.WriteLine($"WebSocketServer: Starting on {uri}...");
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
             if (host.ToLower() != "any" && host != "*")
             {
-                Console.WriteLine($"WebSocketServer: Starting on {host}:{port}...");
                 var ipHostInfo = Dns.GetHostEntry(host);
                 var ipAddress = ipHostInfo.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
                 localEndPoint = new IPEndPoint(ipAddress, port);
-            }
-            else
-            {
-                Console.WriteLine($"WebSocketServer: Starting on IPAddress.Any:{port}...");
-                localEndPoint = new IPEndPoint(IPAddress.Any, port);
             }
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
@@ -78,57 +68,12 @@ namespace CSharpNetworking
         {
             Console.WriteLine("WebSocketServer: Waiting for a new client connection...");
             var clientSocket = await socket.AcceptAsync();
-            var stream = GetNetworkStream(clientSocket);
+            var stream = WebSocket.GetNetworkStream(clientSocket, uri);
             var client = new SocketStream(clientSocket, stream);
             OnAccepted.Invoke(this, client);
             Console.WriteLine($"WebSocketServer: A new client has connected {client.IP}:{client.Port}...");
             StartHandshakeWithClient(client);
             var doNotWait = AcceptNewClient();
-        }
-
-        private Stream GetNetworkStream(Socket socket)
-        {
-            var networkStream = new NetworkStream(socket);
-            X509Certificate2 serverCertificate = null;
-            byte[] bytes = null;
-            SslStream sslStream = null;
-            var currentDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
-            var path = "";
-            try
-            {
-                switch (streamType)
-                {
-                    case StreamType.Unsecured:
-                        return networkStream;
-                    case StreamType.SecuredLocalhost:
-                        path = Path.Combine(currentDirectory, "localhost.pfx");
-                        Console.WriteLine($"Reading certificate from {path}");
-                        bytes = File.ReadAllBytes(path);
-                        serverCertificate = new X509Certificate2(bytes, "1234");
-                        Console.WriteLine("Certificate Read [localhost]...");
-                        sslStream = new SslStream(networkStream);
-                        sslStream.AuthenticateAsServer(serverCertificate,
-                                enabledSslProtocols: SslProtocols.Tls,
-                                clientCertificateRequired: false,
-                                checkCertificateRevocation: false);
-                        return sslStream;
-                    case StreamType.SecuredRemote:
-                        path = Path.Combine(currentDirectory, "letsencrypt.pfx");
-                        Console.WriteLine($"Reading certificate from {path}");
-                        bytes = File.ReadAllBytes(path);
-                        serverCertificate = new X509Certificate2(bytes, "1234");
-                        Console.WriteLine("Certificate Read [letsencrypt]...");
-                        sslStream = new SslStream(networkStream);
-                        sslStream.AuthenticateAsServer(serverCertificate,
-                                enabledSslProtocols: SslProtocols.Tls,
-                                clientCertificateRequired: false,
-                                checkCertificateRevocation: false);
-                        return sslStream;
-                    default:
-                        throw new Exception("Invalid stream type");
-                }
-            }
-            catch (Exception ex) { Console.WriteLine(ex); return null; }
         }
 
         private async void StartHandshakeWithClient(SocketStream client)
@@ -247,7 +192,7 @@ namespace CSharpNetworking
         {
             var bytes = WebSocket.StringToBytes(message, false);
             await client.stream.WriteAsync(bytes, 0, bytes.Length);
-            Console.WriteLine($"WebSocket Server: Sent to {client.IP}:{client.Port}: {message}");
+            Console.WriteLine($"WebSocketServer: Sent to {client.IP}:{client.Port}: {message}");
         }
     }
 }

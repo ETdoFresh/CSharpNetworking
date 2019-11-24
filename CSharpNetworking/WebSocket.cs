@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,6 +13,8 @@ namespace CSharpNetworking
 {
     class WebSocket
     {
+        public enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
+
         private static Random Random { get; } = new Random();
 
         public static byte[] StringToBytes(string message, bool masked = true)
@@ -157,6 +164,57 @@ namespace CSharpNetworking
             var opCode = bytes.ElementAt(0) & 0b_0000_1111;
             var closeConnectionRequested = opCode == 0x08;
             return closeConnectionRequested;
+        }
+
+        public static Stream GetNetworkStream(Socket socket, Uri uri)
+        {
+            var host = uri.Host;
+            var streamType = StreamType.Unsecured;
+            if (uri.Scheme.ToLower() == "wss")
+                if (host.ToLower() == "localhost") streamType = StreamType.SecuredLocalhost;
+                else if (host.ToLower() != "localhost") streamType = StreamType.SecuredRemote;
+
+            var networkStream = new NetworkStream(socket);
+            X509Certificate2 serverCertificate = null;
+            byte[] bytes = null;
+            SslStream sslStream = null;
+            var currentDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            var path = "";
+            try
+            {
+                switch (streamType)
+                {
+                    case StreamType.Unsecured:
+                        return networkStream;
+                    case StreamType.SecuredLocalhost:
+                        path = Path.Combine(currentDirectory, "localhost.pfx");
+                        Console.WriteLine($"Reading certificate from {path}");
+                        bytes = File.ReadAllBytes(path);
+                        serverCertificate = new X509Certificate2(bytes, "1234");
+                        Console.WriteLine("Certificate Read [localhost]...");
+                        sslStream = new SslStream(networkStream);
+                        sslStream.AuthenticateAsServer(serverCertificate,
+                                enabledSslProtocols: SslProtocols.Tls,
+                                clientCertificateRequired: false,
+                                checkCertificateRevocation: false);
+                        return sslStream;
+                    case StreamType.SecuredRemote:
+                        path = Path.Combine(currentDirectory, "letsencrypt.pfx");
+                        Console.WriteLine($"Reading certificate from {path}");
+                        bytes = File.ReadAllBytes(path);
+                        serverCertificate = new X509Certificate2(bytes, "1234");
+                        Console.WriteLine("Certificate Read [letsencrypt]...");
+                        sslStream = new SslStream(networkStream);
+                        sslStream.AuthenticateAsServer(serverCertificate,
+                                enabledSslProtocols: SslProtocols.Tls,
+                                clientCertificateRequired: false,
+                                checkCertificateRevocation: false);
+                        return sslStream;
+                    default:
+                        throw new Exception("Invalid stream type");
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex); return null; }
         }
     }
 }
