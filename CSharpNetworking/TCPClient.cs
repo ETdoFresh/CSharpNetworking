@@ -14,9 +14,9 @@ namespace CSharpNetworking
         const string TERMINATOR_CONSOLE = "{\\r\\n}";
         public Socket socket;
 
-        public event EventHandler OnConnected = delegate { };
+        public event EventHandler OnOpen = delegate { };
         public event EventHandler<Message> OnMessage = delegate { };
-        public event EventHandler OnDisconnected = delegate { };
+        public event EventHandler OnClose = delegate { };
         public event EventHandler<Exception> OnError = delegate { };
 
         public TCPClient(int port) : this("localhost", port) { }
@@ -36,7 +36,7 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
-                OnConnected.Invoke(this, null);
+                OnOpen.Invoke(this, null);
                 Console.WriteLine($"Connected!");
                 var doNotWait = StartReceivingFromGameServer();
             }
@@ -107,7 +107,7 @@ namespace CSharpNetworking
             try
             {
                 if (socket.Connected) socket.Disconnect(false);
-                OnDisconnected.Invoke(this, null);
+                OnClose.Invoke(this, null);
                 Console.WriteLine($"TCPClient: Disconnected normally.");
             }
             catch (Exception exception)
@@ -119,7 +119,7 @@ namespace CSharpNetworking
         private void DisconnectError(Socket socket, Exception exception)
         {
             OnError.Invoke(this, exception);
-            OnDisconnected.Invoke(this, null);
+            OnClose.Invoke(this, null);
             Console.WriteLine($"TCPClient: Unexpectadely disconnected. {exception.Message}");
         }
     }

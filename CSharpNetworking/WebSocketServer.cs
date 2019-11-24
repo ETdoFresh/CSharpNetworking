@@ -21,11 +21,11 @@ namespace CSharpNetworking
         public Socket socket;
         private Uri uri;
 
-        public event EventHandler OnListening = delegate { };
-        public event EventHandler<SocketStream> OnAccepted = delegate { };
+        public event EventHandler OnServerOpen = delegate { };
+        public event EventHandler<SocketStream> OnOpen = delegate { };
         public event EventHandler<Message<SocketStream>> OnMessage = delegate { };
-        public event EventHandler<SocketStream> OnDisconnected = delegate { };
-        public event EventHandler OnStopListening = delegate { };
+        public event EventHandler<SocketStream> OnClose = delegate { };
+        public event EventHandler OnServerClose = delegate { };
         public event EventHandler<Exception> OnError = delegate { };
 
         public WebSocketServer(string uriString)
@@ -50,7 +50,7 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            OnListening.Invoke(this, null);
+            OnServerOpen.Invoke(this, null);
             Console.WriteLine($"WebSocketServer: Listening...");
             var doNotWait = AcceptNewClient();
         }
@@ -62,7 +62,7 @@ namespace CSharpNetworking
                 socket.Close();
                 socket.Dispose();
             }
-            OnStopListening.Invoke(this, null);
+            OnServerClose.Invoke(this, null);
             Console.WriteLine($"WebSocketServer: Stop Listening...");
         }
 
@@ -72,7 +72,7 @@ namespace CSharpNetworking
             var clientSocket = await socket.AcceptAsync();
             var stream = GetNetworkStream(clientSocket);
             var client = new SocketStream(clientSocket, stream);
-            OnAccepted.Invoke(this, client);
+            OnOpen.Invoke(this, client);
             Console.WriteLine($"WebSocketServer: A new client has connected {client.IP}:{client.Port}...");
             StartHandshakeWithClient(client);
             var doNotWait = AcceptNewClient();
@@ -169,7 +169,7 @@ namespace CSharpNetworking
             try
             {
                 if (client.socket.Connected) client.socket.Disconnect(false);
-                OnDisconnected.Invoke(this, client);
+                OnClose.Invoke(this, client);
                 Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} disconnected normally.");
             }
             catch (Exception exception)
@@ -181,7 +181,7 @@ namespace CSharpNetworking
         private void DisconnectError(Exception exception, SocketStream client)
         {
             OnError.Invoke(this, exception);
-            OnDisconnected.Invoke(this, client);
+            OnClose.Invoke(this, client);
             Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} unexpectadely disconnected. {exception.Message}");
         }
 

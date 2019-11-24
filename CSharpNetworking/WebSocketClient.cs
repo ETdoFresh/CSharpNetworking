@@ -18,9 +18,9 @@ namespace CSharpNetworking
         public Stream stream;
 
         public event EventHandler OnSocketConnected = delegate { };
-        public event EventHandler OnConnected = delegate { };
+        public event EventHandler OnOpen = delegate { };
         public event EventHandler<Message> OnMessage = delegate { };
-        public event EventHandler OnDisconnected = delegate { };
+        public event EventHandler OnClose = delegate { };
         public event EventHandler<Exception> OnError = delegate { };
 
         public WebSocketClient(string uriString)
@@ -74,7 +74,7 @@ namespace CSharpNetworking
                 var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 received.AddRange(buffer.Take(bytesRead));
             }
-            OnConnected.Invoke(this, null);
+            OnOpen.Invoke(this, null);
             var doNotWait = StartReceivingFromServer();
         }
 
@@ -128,7 +128,7 @@ namespace CSharpNetworking
             try
             {
                 if (socket.Connected) socket.Disconnect(false);
-                OnDisconnected.Invoke(this, null);
+                OnClose.Invoke(this, null);
                 Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
             catch (Exception exception)
@@ -140,7 +140,7 @@ namespace CSharpNetworking
         private void DisconnectError(Socket socket, Exception exception)
         {
             OnError.Invoke(this, exception);
-            OnDisconnected.Invoke(this, null);
+            OnClose.Invoke(this, null);
             Console.WriteLine($"WebSocketClient: Unexpectadely disconnected. {exception.Message}");
         }
 

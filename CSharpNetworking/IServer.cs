@@ -4,11 +4,11 @@ namespace CSharpNetworking
 {
     public interface IServer<TClient>
     {
-        event EventHandler OnListening;
-        event EventHandler<TClient> OnAccepted;
+        event EventHandler OnServerOpen;
+        event EventHandler OnServerClose;
+        event EventHandler<TClient> OnOpen;
         event EventHandler<Message<TClient>> OnMessage;
-        event EventHandler<TClient> OnDisconnected;
-        event EventHandler OnStopListening;
+        event EventHandler<TClient> OnClose;
         event EventHandler<Exception> OnError;
     }
 }

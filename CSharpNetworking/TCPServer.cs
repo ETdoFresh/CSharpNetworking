@@ -13,11 +13,11 @@ namespace CSharpNetworking
         const string TERMINATOR_CONSOLE = "{\\r\\n}";
         public Socket socket;
 
-        public event EventHandler OnListening = delegate { };
-        public event EventHandler<Socket> OnAccepted = delegate { };
+        public event EventHandler OnServerOpen = delegate { };
+        public event EventHandler<Socket> OnOpen = delegate { };
         public event EventHandler<Message<Socket>> OnMessage = delegate { };
-        public event EventHandler<Socket> OnDisconnected = delegate { };
-        public event EventHandler OnStopListening = delegate { };
+        public event EventHandler<Socket> OnClose = delegate { };
+        public event EventHandler OnServerClose = delegate { };
         public event EventHandler<Exception> OnError = delegate { };
 
         public TCPServer(int port) : this("", port) { }
@@ -45,7 +45,7 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            OnListening.Invoke(this, null);
+            OnServerOpen.Invoke(this, null);
             var doNotWait = AcceptNewClient();
             Console.WriteLine($"TCPServer: Listening...");
         }
@@ -57,7 +57,7 @@ namespace CSharpNetworking
                 socket.Close();
                 socket.Dispose();
             }
-            OnStopListening.Invoke(this, null);
+            OnServerClose.Invoke(this, null);
             Console.WriteLine($"TCPServer: Stop Listening...");
         }
 
@@ -69,7 +69,7 @@ namespace CSharpNetworking
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
             Console.WriteLine($"TCPServer: A new client has connected {ip}:{port}...");
-            OnAccepted.Invoke(this, socket);
+            OnOpen.Invoke(this, socket);
             StartReceivingFromGameClient(socket);
             var doNotWait = AcceptNewClient();
         }
@@ -120,7 +120,7 @@ namespace CSharpNetworking
             try
             {
                 if (socket.Connected) socket.Disconnect(false);
-                OnDisconnected.Invoke(this, socket);
+                OnClose.Invoke(this, socket);
                 Console.WriteLine($"TCPServer: Client {ip}:{port} disconnected normally.");
             }
             catch (Exception exception)
@@ -132,7 +132,7 @@ namespace CSharpNetworking
         private void DisconnectError(Socket socket, Exception exception)
         {
             OnError.Invoke(this, exception);
-            OnDisconnected.Invoke(this, socket);
+            OnClose.Invoke(this, socket);
             Console.WriteLine($"TCPServer: Client unexpectadely disconnected. {exception.Message}");
         }
 
