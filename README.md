@@ -16,7 +16,7 @@ Each protocol implements interfaces IServer or IClient which require that the pr
 - `OnStopListening(object server)` When the server stops listening for clients
 - `OnError(Exception exception)` When there is an exception on the server
 
-### IClient\<T>
+### IClient
 - `OnConnected(object client)` When the client connects to the server
 - `OnMessage(object client, Message message)` When the client receives a message from the server
 - `OnDisconnected(object client)` When the client disconnects from the server

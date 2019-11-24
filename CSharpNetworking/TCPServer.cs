@@ -45,7 +45,7 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            var doNotWait = Task.Run(AcceptNewClient);
+            var doNotWait = AcceptNewClient();
             Console.WriteLine($"TCPServer: Listening...");
         }
 
@@ -59,6 +59,7 @@ namespace CSharpNetworking
             Console.WriteLine($"TCPServer: A new client has connected {ip}:{port}...");
             OnAccepted.Invoke(this, socket);
             StartReceivingFromGameClient(socket);
+            var doNotWait = AcceptNewClient();
         }
 
         private async void StartReceivingFromGameClient(Socket socket)
