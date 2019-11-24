@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0AFCD668-3C02-4E85-A87C-82A85660FA2B}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>CSharpNetworking</RootNamespace>
-    <AssemblyName>CSharpNetworking</AssemblyName>
+    <ProjectGuid>{9C2ABDD3-882A-4608-B463-C100984633D9}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ExampleTCPServer</RootNamespace>
+    <AssemblyName>ExampleTCPServer</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -32,9 +32,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -46,18 +43,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IClient.cs" />
-    <Compile Include="IServer.cs" />
-    <Compile Include="Message.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TCPClient.cs" />
-    <Compile Include="TCPServer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\README.md">
-      <Link>README.md</Link>
-    </None>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CSharpNetworking\CSharpNetworking.csproj">
+      <Project>{0afcd668-3c02-4e85-a87c-82a85660fa2b}</Project>
+      <Name>CSharpNetworking</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

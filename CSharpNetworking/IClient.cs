@@ -5,7 +5,7 @@ namespace CSharpNetworking
     public interface IClient
     {
         event EventHandler OnConnected;
-        event EventHandler OnMessage;
+        event EventHandler<Message> OnMessage;
         event EventHandler OnDisconnected;
         event EventHandler<Exception> OnError;
     }

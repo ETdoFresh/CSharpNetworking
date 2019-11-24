@@ -91,7 +91,6 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception);
                 OnError.Invoke(this, exception);
             }
             finally
@@ -126,7 +125,7 @@ namespace CSharpNetworking
 
         public void Send(Socket socket, string message)
         {
-            var doNotWait = Task.Run(() => SendAsync(socket, message));
+            var doNotWait = SendAsync(socket, message);
         }
 
         public async Task SendAsync(Socket socket, string message)

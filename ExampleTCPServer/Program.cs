@@ -12,7 +12,8 @@ namespace Example
     {
         static void Main(string[] args)
         {
-            var tcpServer = new TCPServer(9999);
+            var port = 9999;
+            var tcpServer = new TCPServer(port);
             Console.ReadKey();
         }
     }
