@@ -81,12 +81,12 @@ namespace CSharpNetworking
         public async Task StartReceivingFromServer()
         {
             var received = new List<byte>();
-            var buffer = new ArraySegment<byte>(new byte[2048]);
+            var buffer = new byte[2048];
             try
             {
                 while (true)
                 {
-                    var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                    var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                     received.AddRange(buffer.Take(bytesRead));
                     if (!WebSocket.IsDiconnectPacket(received))
                     {
@@ -118,7 +118,7 @@ namespace CSharpNetworking
 
         public async Task SendAsync(string message)
         {
-            var bytes = WebSocket.StringToBytes(message, false);
+            var bytes = WebSocket.StringToBytes(message);
             await stream.WriteAsync(bytes, 0, bytes.Length);
             Console.WriteLine($"WebSocketClient: Sent to {uri}: {message}");
         }

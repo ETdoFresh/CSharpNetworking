@@ -11,7 +11,7 @@ namespace ExampleWebSocketClient
     {
         static void Main(string[] args)
         {
-            var uri = "wss://localhost:11001";
+            var uri = "wss://echo.websocket.org";
             Console.WriteLine($"This is an example WebSocket Client. Press any key to connect to {uri}");
             Console.ReadKey();
 
