@@ -110,11 +110,11 @@ namespace CSharpNetworking
             }
             finally
             {
-                Disconnect(socket);
+                ClientDisconnect(socket);
             }
         }
 
-        private void Disconnect(Socket socket)
+        private void ClientDisconnect(Socket socket)
         {
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
@@ -127,11 +127,11 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                DisconnectError(socket, exception);
+                ClientDisconnectError(socket, exception);
             }
         }
 
-        private void DisconnectError(Socket socket, Exception exception)
+        private void ClientDisconnectError(Socket socket, Exception exception)
         {
             OnError.Invoke(this, exception);
             OnClose.Invoke(this, socket);
@@ -158,6 +158,12 @@ namespace CSharpNetworking
             await socket.SendAsync(bytesArraySegment, SocketFlags.None);
             var message = Encoding.UTF8.GetString(bytes);
             Console.WriteLine($"TCPClient: Sent to {ip}:{port}: {message}{Terminator.CONSOLE}");
+        }
+
+        public void Disconnect(Socket socket)
+        {
+            if (socket.Connected)
+                socket.Disconnect(false);
         }
     }
 }
