@@ -12,7 +12,7 @@ namespace CSharpNetworking
     {
         public string hostNameOrAddress;
         public int port;
-        public Socket socket;
+        [NonSerialized] public Socket socket;
 
         public event EventHandler OnOpen = delegate { };
         public event EventHandler<Message> OnMessage = delegate { };
@@ -114,9 +114,6 @@ namespace CSharpNetworking
 
         public void Close()
         {
-            var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
-            var ip = remoteEndPoint.Address;
-            var port = remoteEndPoint.Port;
             try
             {
                 if (socket.Connected) socket.Disconnect(false);

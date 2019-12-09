@@ -15,7 +15,7 @@ namespace CSharpNetworking
     public class WebSocketClient : IClient
     {
         public Uri uri;
-        public Socket socket;
+        [NonSerialized] public Socket socket;
         public Stream stream;
 
         public event EventHandler OnSocketConnected = delegate { };

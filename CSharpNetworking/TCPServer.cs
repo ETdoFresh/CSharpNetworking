@@ -12,7 +12,7 @@ namespace CSharpNetworking
     {
         public string hostNameOrAddress;
         public int port;
-        public Socket socket;
+        [NonSerialized] public Socket socket;
 
         public event EventHandler OnServerOpen = delegate { };
         public event EventHandler<Socket> OnOpen = delegate { };
@@ -32,7 +32,7 @@ namespace CSharpNetworking
         public void Open()
         {
             IPEndPoint localEndPoint = null;
-            if (hostNameOrAddress != "")
+            if (string.IsNullOrEmpty(hostNameOrAddress))
             {
                 Console.WriteLine($"TCPServer: Starting on {hostNameOrAddress}:{port}...");
                 var ipHostInfo = Dns.GetHostEntry(hostNameOrAddress);
@@ -116,11 +116,11 @@ namespace CSharpNetworking
 
         private void ClientDisconnect(Socket socket)
         {
-            var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
-            var ip = remoteEndPoint.Address;
-            var port = remoteEndPoint.Port;
             try
             {
+                var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
+                var ip = remoteEndPoint.Address;
+                var port = remoteEndPoint.Port;
                 if (socket.Connected) socket.Disconnect(false);
                 OnClose.Invoke(this, socket);
                 Console.WriteLine($"TCPServer: Client {ip}:{port} disconnected normally.");
