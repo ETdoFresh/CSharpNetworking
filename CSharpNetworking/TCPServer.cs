@@ -32,17 +32,18 @@ namespace CSharpNetworking
         public void Open()
         {
             IPEndPoint localEndPoint = null;
-            if (string.IsNullOrEmpty(hostNameOrAddress))
+            
+            if (string.IsNullOrEmpty(hostNameOrAddress) || hostNameOrAddress == "0.0.0.0" || hostNameOrAddress == "::/0")
+            {
+                Console.WriteLine($"TCPServer: Starting on IPAddress.Any:{port}...");
+                localEndPoint = new IPEndPoint(IPAddress.Any, port);
+            }
+            else
             {
                 Console.WriteLine($"TCPServer: Starting on {hostNameOrAddress}:{port}...");
                 var ipHostInfo = Dns.GetHostEntry(hostNameOrAddress);
                 var ipAddress = ipHostInfo.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
                 localEndPoint = new IPEndPoint(ipAddress, port);
-            }
-            else
-            {
-                Console.WriteLine($"TCPServer: Starting on IPAddress.Any:{port}...");
-                localEndPoint = new IPEndPoint(IPAddress.Any, port);
             }
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
