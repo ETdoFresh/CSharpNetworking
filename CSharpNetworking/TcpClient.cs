@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class TcpClient : AbstractClient
+    public class TcpClient : BaseClient
     {
         public string hostNameOrAddress;
         public int port;
@@ -22,7 +22,7 @@ namespace CSharpNetworking
             this.port = port;
         }
 
-        public override async Task Open()
+        public override async Task OpenAsync()
         {
             try
             {
@@ -32,13 +32,13 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
-                OnOpen.Invoke();
+                Opened.Invoke();
                 Console.WriteLine($"Connected!");
                 var doNotWait = StartReceivingFromGameServer();
             }
             catch(Exception exception)
             {
-                OnError.Invoke(exception);
+                Error.Invoke(exception);
             }
         }
 
@@ -62,7 +62,7 @@ namespace CSharpNetworking
                         var messages = receivedMessage.Split(new[] { Terminator.VALUE }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var message in messages)
                         {
-                            OnMessage.Invoke(new Message(message));
+                            MessageReceived.Invoke(new Message(message));
                             Console.WriteLine($"TCPClient: Received from {ip}:{port}: {message}{Terminator.CONSOLE}");
                         }
                     }
@@ -72,20 +72,20 @@ namespace CSharpNetworking
             }
             catch(Exception exception)
             {
-                OnError.Invoke(exception);
+                Error.Invoke(exception);
             }
             finally
             {
-                await Close();
+                await CloseAsync();
             }
         }
 
-        public override Task Send(string message)
+        public override Task SendAsync(string message)
         {
-            return Send(Encoding.UTF8.GetBytes(message));
+            return SendAsync(Encoding.UTF8.GetBytes(message));
         }
 
-        public override async Task Send(byte[] bytes)
+        public override async Task SendAsync(byte[] bytes)
         {
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
@@ -97,18 +97,18 @@ namespace CSharpNetworking
             Console.WriteLine($"TCPClient: Sent to {ip}:{port}: {message}{Terminator.CONSOLE}");
         }
 
-        public override async Task Close()
+        public override async Task CloseAsync()
         {
             try
             {
                 if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
-                OnClose.Invoke();
+                Closed.Invoke();
                 Console.WriteLine($"TCPClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                OnError.Invoke(exception);
-                OnClose.Invoke();
+                Error.Invoke(exception);
+                Closed.Invoke();
                 Console.WriteLine($"TCPClient: Unexpectedly disconnected. {exception.Message}");
             }
         }

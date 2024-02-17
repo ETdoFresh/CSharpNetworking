@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class WebSocketClient : AbstractClient
+    public class WebSocketClient : BaseClient
     {
         public Uri uri;
         [NonSerialized] public Socket socket;
@@ -22,7 +22,7 @@ namespace CSharpNetworking
         
         public WebSocketClient(string uriString) { uri = new Uri(uriString); }
 
-        public override async Task Open()
+        public override async Task OpenAsync()
         {
             var host = uri.Host;
             var port = uri.Port;
@@ -41,7 +41,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                OnError.Invoke(exception);
+                Error.Invoke(exception);
             }
         }
 
@@ -67,7 +67,7 @@ namespace CSharpNetworking
                 var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 received.AddRange(buffer.Take(bytesRead));
             }
-            OnOpen.Invoke();
+            Opened.Invoke();
             await StartReceivingFromServer();
         }
 
@@ -87,7 +87,7 @@ namespace CSharpNetworking
                         {
                             var bytes = WebSocket.NetworkingBytesToByteArray(received.ToArray());
                             var message = new Message(bytes);
-                            OnMessage.Invoke(message);
+                            MessageReceived.Invoke(message);
                             Console.WriteLine($"WebSocketClient: Received from {uri}: {message}");
                             received.RemoveRange(0, (int)WebSocket.PacketLength(received));
                         }
@@ -97,20 +97,20 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                OnError.Invoke(exception);
+                Error.Invoke(exception);
             }
             finally
             {
-                Close();
+                CloseAsync();
             }
         }
 
-        public override Task Send(string message)
+        public override Task SendAsync(string message)
         {
-            return Send(Encoding.UTF8.GetBytes(message));
+            return SendAsync(Encoding.UTF8.GetBytes(message));
         }
 
-        public override async Task Send(byte[] bytes)
+        public override async Task SendAsync(byte[] bytes)
         {
             var message = Encoding.UTF8.GetString(bytes);
             bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
@@ -118,18 +118,18 @@ namespace CSharpNetworking
             Console.WriteLine($"WebSocketClient: Sent to {uri}: {message}");
         }
 
-        public override async Task Close()
+        public override async Task CloseAsync()
         {
             try
             {
                 if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
-                OnClose.Invoke();
+                Closed.Invoke();
                 Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                OnError.Invoke(exception);
-                OnClose.Invoke();
+                Error.Invoke(exception);
+                Closed.Invoke();
                 Console.WriteLine($"WebSocketClient: Unexpectedly disconnected. {exception.Message}");
             }
         }

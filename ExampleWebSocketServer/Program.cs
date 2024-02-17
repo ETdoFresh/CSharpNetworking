@@ -12,7 +12,7 @@ namespace ExampleWebSocketServer
         static void Main(string[] args)
         {
             var server = new WebSocketServer("wss://localhost:11001");
-            server.Open();
+            server.OpenAsync();
             Console.ReadKey();
         }
     }

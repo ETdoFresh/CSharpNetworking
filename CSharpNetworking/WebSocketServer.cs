@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class WebSocketServer : AbstractServer<SocketStream>
+    public class WebSocketServer : BaseServer<SocketStream>
     {
         private enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
 
@@ -26,7 +26,7 @@ namespace CSharpNetworking
             uri = new Uri(uriString);
         }
 
-        public override async Task Open()
+        public override async Task OpenAsync()
         {
             var host = uri.Host;
             var port = uri.Port;
@@ -42,19 +42,19 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            OnServerOpen.Invoke();
+            ServerOpened.Invoke();
             Console.WriteLine($"WebSocketServer: Listening...");
             await AcceptNewClient();
         }
 
-        public override async Task Close()
+        public override async Task CloseAsync()
         {
             if (socket != null)
             {
                 socket.Close();
                 socket.Dispose();
             }
-            OnServerClose.Invoke();
+            ServerClosed.Invoke();
             Console.WriteLine($"WebSocketServer: Stop Listening...");
         }
 
@@ -64,7 +64,7 @@ namespace CSharpNetworking
             var clientSocket = await socket.AcceptAsync();
             var stream = GetNetworkStream(clientSocket);
             var client = new SocketStream(clientSocket, stream);
-            OnOpen.Invoke(client);
+            Opened.Invoke(client);
             Console.WriteLine($"WebSocketServer: A new client has connected {client.IP}:{client.Port}...");
             StartHandshakeWithClient(client);
             await AcceptNewClient();
@@ -116,7 +116,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                OnError.Invoke(exception);
+                Error.Invoke(exception);
                 Disconnect(client);
             }
         }
@@ -139,7 +139,7 @@ namespace CSharpNetworking
                         {
                             var message = WebSocket.BytesToString(received.ToArray());
                             received.RemoveRange(0, (int)WebSocket.PacketLength(received));
-                            OnMessage.Invoke(new Message<SocketStream>(client, message));
+                            ReceivedMessage.Invoke(new Message<SocketStream>(client, message));
                             Console.WriteLine($"WebSocketServer: Received from {client.IP}:{client.Port}: {message}");
                         }
                     }
@@ -161,7 +161,7 @@ namespace CSharpNetworking
             try
             {
                 if (client.socket.Connected) client.socket.Disconnect(false);
-                OnClose.Invoke(client);
+                Closed.Invoke(client);
                 Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} disconnected normally.");
             }
             catch (Exception exception)
@@ -172,17 +172,17 @@ namespace CSharpNetworking
 
         private void DisconnectError(Exception exception, SocketStream client)
         {
-            OnError.Invoke(exception);
-            OnClose.Invoke(client);
+            Error.Invoke(exception);
+            Closed.Invoke(client);
             Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} unexpectadely disconnected. {exception.Message}");
         }
 
-        public override Task Send(SocketStream client, string message)
+        public override Task SendAsync(SocketStream client, string message)
         {
-            return Send(client, Encoding.UTF8.GetBytes(message));
+            return SendAsync(client, Encoding.UTF8.GetBytes(message));
         }
 
-        public override async Task Send(SocketStream client, byte[] bytes)
+        public override async Task SendAsync(SocketStream client, byte[] bytes)
         {
             var message = Encoding.UTF8.GetString(bytes);
             bytes = WebSocket.ByteArrayToNetworkBytes(bytes);

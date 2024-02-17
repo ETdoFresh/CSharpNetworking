@@ -9,7 +9,7 @@ namespace Example
         {
             var port = 9999;
             var server = new TcpServer(port);
-            server.Open();
+            server.OpenAsync();
             Console.ReadKey();
         }
     }

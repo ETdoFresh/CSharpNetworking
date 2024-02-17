@@ -48,8 +48,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractClient.cs" />
-    <Compile Include="AbstractServer.cs" />
+    <Compile Include="BaseClient.cs" />
+    <Compile Include="BaseServer.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketStream.cs" />

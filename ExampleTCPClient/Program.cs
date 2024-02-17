@@ -17,9 +17,9 @@ namespace ExampleTCPClient
             Console.ReadKey();
 
             var client = new TcpClient(port);
-            client.Open();
+            client.OpenAsync();
             Console.ReadKey();
-            client.Close();
+            client.CloseAsync();
         }
     }
 }

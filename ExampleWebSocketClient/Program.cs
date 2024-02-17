@@ -12,17 +12,17 @@ namespace ExampleWebSocketClient
             Console.ReadKey();
 
             var client = new WebSocketClient(uri);
-            client.OnOpen += () => { client.Send("Hello World!"); };
-            client.Open();
+            client.Opened += () => { client.SendAsync("Hello World!"); };
+            client.OpenAsync();
             Console.ReadKey();
             
-            client.Send("Hello World 2!");
+            client.SendAsync("Hello World 2!");
             Console.ReadKey();
 
-            client.Send("Hello World 3!");
+            client.SendAsync("Hello World 3!");
             Console.ReadKey();
 
-            client.Close();
+            client.CloseAsync();
         }
     }
 }
