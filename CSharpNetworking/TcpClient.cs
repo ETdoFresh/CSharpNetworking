@@ -26,15 +26,13 @@ namespace CSharpNetworking
         {
             try
             {
-                Console.Write($"TCPClient: Connecting to {hostNameOrAddress}:{port}...");
-                var ipHostInfo = Dns.GetHostEntry(hostNameOrAddress);
-                var ipAddress = ipHostInfo.AddressList.Where((i) => i.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
+                var ipHostInfo = await Dns.GetHostEntryAsync(hostNameOrAddress);
+                var ipAddress = ipHostInfo.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork);
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
                 InvokeOpenedEvent();
-                Console.WriteLine($"Connected!");
-                var doNotWait = StartReceivingFromGameServer();
+                await StartReceivingFromGameServer();
             }
             catch(Exception exception)
             {
@@ -100,13 +98,11 @@ namespace CSharpNetworking
             {
                 if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
                 InvokeClosedEvent();
-                Console.WriteLine($"TCPClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
                 InvokeErrorEvent(exception);
                 InvokeClosedEvent();
-                Console.WriteLine($"TCPClient: Unexpectedly disconnected. {exception.Message}");
             }
         }
     }

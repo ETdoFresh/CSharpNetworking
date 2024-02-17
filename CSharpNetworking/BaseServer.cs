@@ -7,11 +7,12 @@ namespace CSharpNetworking
     {
         public event Action ServerOpened;
         public event Action ServerClosed;
-        public event Action<TClient> Opened;
-        public event Action<TClient, byte[]> Received;
-        public event Action<TClient, byte[]> Sent;
-        public event Action<TClient> Closed;
-        public event Action<Exception> Error;
+        public event Action<Exception> ServerError;
+        public event Action<TClient> ClientConnected;
+        public event Action<TClient> ClientDisconnected;
+        public event Action<TClient, byte[]> ClientReceived;
+        public event Action<TClient, byte[]> ClientSent;
+        public event Action<TClient, Exception> ClientError;
 
         public abstract Task OpenAsync();
         public abstract Task CloseAsync();
@@ -20,10 +21,11 @@ namespace CSharpNetworking
         
         protected void InvokeServerOpenedEvent() => ServerOpened?.Invoke();
         protected void InvokeServerClosedEvent() => ServerClosed?.Invoke();
-        protected void InvokeOpenedEvent(TClient client) => Opened?.Invoke(client);
-        protected void InvokeReceivedEvent(TClient client, byte[] bytes) => Received?.Invoke(client, bytes);
-        protected void InvokeSentEvent(TClient client, byte[] bytes) => Sent?.Invoke(client, bytes);
-        protected void InvokeClosedEvent(TClient client) => Closed?.Invoke(client);
-        protected void InvokeErrorEvent(Exception exception) => Error?.Invoke(exception);
+        protected void InvokeServerErrorEvent(Exception exception) => ServerError?.Invoke(exception);
+        protected void InvokeOpenedEvent(TClient client) => ClientConnected?.Invoke(client);
+        protected void InvokeReceivedEvent(TClient client, byte[] bytes) => ClientReceived?.Invoke(client, bytes);
+        protected void InvokeSentEvent(TClient client, byte[] bytes) => ClientSent?.Invoke(client, bytes);
+        protected void InvokeClosedEvent(TClient client) => ClientDisconnected?.Invoke(client);
+        protected void InvokeClientErrorEvent(TClient client, Exception exception) => ClientError?.Invoke(client, exception);
     }
 }

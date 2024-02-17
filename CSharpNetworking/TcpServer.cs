@@ -28,14 +28,12 @@ namespace CSharpNetworking
             
             if (string.IsNullOrEmpty(hostNameOrAddress) || hostNameOrAddress == "0.0.0.0" || hostNameOrAddress == "::/0")
             {
-                Console.WriteLine($"TCPServer: Starting on IPAddress.Any:{port}...");
                 localEndPoint = new IPEndPoint(IPAddress.Any, port);
             }
             else
             {
-                Console.WriteLine($"TCPServer: Starting on {hostNameOrAddress}:{port}...");
-                var ipHostInfo = Dns.GetHostEntry(hostNameOrAddress);
-                var ipAddress = ipHostInfo.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
+                var ipHostInfo = await Dns.GetHostEntryAsync(hostNameOrAddress);
+                var ipAddress = ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
                 localEndPoint = new IPEndPoint(ipAddress, port);
             }
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -43,7 +41,6 @@ namespace CSharpNetworking
             socket.Listen(100);
             InvokeServerOpenedEvent();
             await AcceptNewClient();
-            Console.WriteLine($"TCPServer: Listening...");
         }
 
         public override async Task CloseAsync()
@@ -54,17 +51,14 @@ namespace CSharpNetworking
                 socket.Dispose();
             }
             InvokeServerClosedEvent();
-            Console.WriteLine($"TCPServer: Stop Listening...");
         }
 
         private async Task AcceptNewClient()
         {
-            Console.WriteLine("TCPServer: Waiting for a new client connection...");
             var socket = await this.socket.AcceptAsync();
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
-            Console.WriteLine($"TCPServer: A new client has connected {ip}:{port}...");
             InvokeOpenedEvent(socket);
             StartReceivingFromGameClient(socket);
             await AcceptNewClient();
@@ -98,7 +92,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                InvokeErrorEvent(exception);
+                InvokeClientErrorEvent(socket, exception);
             }
             finally
             {
@@ -115,19 +109,12 @@ namespace CSharpNetworking
                 var port = remoteEndPoint.Port;
                 if (socket.Connected) socket.Disconnect(false);
                 InvokeClosedEvent(socket);
-                Console.WriteLine($"TCPServer: Client {ip}:{port} disconnected normally.");
             }
             catch (Exception exception)
             {
-                ClientDisconnectError(socket, exception);
+                InvokeClientErrorEvent(socket, exception);
+                InvokeClosedEvent(socket);
             }
-        }
-
-        private void ClientDisconnectError(Socket socket, Exception exception)
-        {
-            InvokeErrorEvent(exception);
-            InvokeClosedEvent(socket);
-            Console.WriteLine($"TCPServer: Client unexpectadely disconnected. {exception.Message}");
         }
 
         public override Task SendAsync(Socket socket, string message)

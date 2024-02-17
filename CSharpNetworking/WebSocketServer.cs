@@ -115,7 +115,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                InvokeErrorEvent(exception);
+                InvokeClientErrorEvent(client, exception);
                 Disconnect(client);
             }
         }
@@ -173,7 +173,7 @@ namespace CSharpNetworking
 
         private void DisconnectError(Exception exception, SocketStream client)
         {
-            InvokeErrorEvent(exception);
+            InvokeClientErrorEvent(client, exception);
             InvokeClosedEvent(client);
             Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} unexpectadely disconnected. {exception.Message}");
         }
