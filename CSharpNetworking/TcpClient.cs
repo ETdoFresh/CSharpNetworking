@@ -33,7 +33,7 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, Port);
                 await Socket.ConnectAsync(localEndPoint);
                 InvokeOpenedEvent();
-                await StartReceivingFromGameServer();
+                await ProcessReceivedData();
             }
             catch(Exception exception)
             {
@@ -41,7 +41,7 @@ namespace CSharpNetworking
             }
         }
 
-        public async Task StartReceivingFromGameServer()
+        public async Task ProcessReceivedData()
         {
             var receivedBytes = new List<byte>();
             var buffer = new ArraySegment<byte>(new byte[2048]);
