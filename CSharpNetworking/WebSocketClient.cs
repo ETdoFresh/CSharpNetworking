@@ -82,19 +82,11 @@ namespace CSharpNetworking
                 {
                     var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                     var rawBytes = buffer.Take(bytesRead).ToArray();
-                    
+
                     if (!WebSocket.IsDiconnectPacket(rawBytes))
                     {
                         var incomingBytes = WebSocket.NetworkingBytesToByteArray(rawBytes);
-                        var terminatorBytes = Terminator.VALUE_BYTES;
-                        var terminatorIndex = incomingBytes.IndexOf(terminatorBytes);
-                        while (terminatorIndex != -1)
-                        {
-                            var messageBytes = incomingBytes.Take(terminatorIndex).ToArray();
-                            InvokeReceivedEvent(messageBytes);
-                            incomingBytes = incomingBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
-                            terminatorIndex = incomingBytes.IndexOf(terminatorBytes);
-                        }
+                        InvokeReceivedEvent(incomingBytes);
                     }
                     else break; // aka disconnect
                 }
