@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
-    public abstract class BaseClient
+    public abstract class Client
     {
         public event Action Opened;
         public event Action<byte[]> Received;

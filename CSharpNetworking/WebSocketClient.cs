@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class WebSocketClient : BaseClient
+    public class WebSocketClient : Client
     {
         public Uri uri;
         public Socket socket;

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ExampleTCPClient
 {
-    class Program
+    public static class Program
     {
         private static void Main(string[] args)
         {
@@ -14,12 +14,14 @@ namespace ExampleTCPClient
             Console.WriteLine($"This is an example TCP Client. Press any key to connect to tcp://{host}:{port}");
             Console.ReadKey();
 
-            var client = new TcpClient(port);
+            Client client = new TcpClient(port);
             client.Opened += () => Console.WriteLine("Connected to server");
             client.Closed += () => Console.WriteLine("Disconnected from server");
-            client.Error += (e) => Console.WriteLine($"Error: {e.Message}");
-            client.Received += (bytes) => Console.WriteLine($"Received: {Encoding.UTF8.GetString(bytes)}");
-            client.Sent += (bytes) => Console.WriteLine($"Sent: {Encoding.UTF8.GetString(bytes)}");
+            client.Error += e => Console.WriteLine($"Error: {e.Message}");
+            client.Received += bytes => Console.WriteLine($"Received: {Encoding.UTF8.GetString(bytes)}");
+            client.Sent += bytes => Console.WriteLine($"Sent: {Encoding.UTF8.GetString(bytes)}");
+            
+            Console.WriteLine("Submit 'exit' command to stop the client.");
             
             _ = client.OpenAsync();
             while (true)

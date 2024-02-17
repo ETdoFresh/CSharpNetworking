@@ -10,52 +10,53 @@ namespace CSharpNetworking
     [Serializable]
     public class TcpServer : BaseServer<Socket>
     {
-        public string hostNameOrAddress;
-        public int port;
-        [NonSerialized] public Socket socket;
-        
+        public string HostNameOrAddress { get; }
+        public int Port { get; }
+        public Socket Socket { get; }
+
         public TcpServer(int port) : this("", port) { }
 
         public TcpServer(string hostNameOrAddress, int port)
         {
-            this.hostNameOrAddress = hostNameOrAddress;
-            this.port = port;
+            HostNameOrAddress = hostNameOrAddress;
+            Port = port;
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         }
 
         public override async Task OpenAsync()
         {
-            IPEndPoint localEndPoint = null;
+            IPEndPoint localEndPoint;
             
-            if (string.IsNullOrEmpty(hostNameOrAddress) || hostNameOrAddress == "0.0.0.0" || hostNameOrAddress == "::/0")
+            if (string.IsNullOrEmpty(HostNameOrAddress) || HostNameOrAddress == "0.0.0.0" || HostNameOrAddress == "::/0")
             {
-                localEndPoint = new IPEndPoint(IPAddress.Any, port);
+                localEndPoint = new IPEndPoint(IPAddress.Any, Port);
             }
             else
             {
-                var ipHostInfo = await Dns.GetHostEntryAsync(hostNameOrAddress);
+                var ipHostInfo = await Dns.GetHostEntryAsync(HostNameOrAddress);
                 var ipAddress = ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-                localEndPoint = new IPEndPoint(ipAddress, port);
+                localEndPoint = new IPEndPoint(ipAddress, Port);
             }
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(localEndPoint);
-            socket.Listen(100);
+            
+            Socket.Bind(localEndPoint);
+            Socket.Listen(100);
             InvokeServerOpenedEvent();
             await AcceptNewClient();
         }
 
         public override async Task CloseAsync()
         {
-            if (socket != null)
+            if (Socket != null)
             {
-                socket.Close();
-                socket.Dispose();
+                Socket.Close();
+                Socket.Dispose();
             }
             InvokeServerClosedEvent();
         }
 
         private async Task AcceptNewClient()
         {
-            var socket = await this.socket.AcceptAsync();
+            var socket = await this.Socket.AcceptAsync();
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;

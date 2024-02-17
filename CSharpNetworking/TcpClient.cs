@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -8,29 +9,29 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class TcpClient : BaseClient
+    public class TcpClient : Client
     {
-        public string hostNameOrAddress;
-        public int port;
-        [NonSerialized] public Socket socket;
+        public string HostNameOrAddress { get; }
+        public int Port { get; }
+        public Socket Socket { get; }
 
         public TcpClient(int port) : this("localhost", port) { }
 
         public TcpClient(string hostNameOrAddress, int port)
         {
-            this.hostNameOrAddress = hostNameOrAddress;
-            this.port = port;
+            HostNameOrAddress = hostNameOrAddress;
+            Port = port;
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         }
 
         public override async Task OpenAsync()
         {
             try
             {
-                var ipHostInfo = await Dns.GetHostEntryAsync(hostNameOrAddress);
+                var ipHostInfo = await Dns.GetHostEntryAsync(HostNameOrAddress);
                 var ipAddress = ipHostInfo.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork);
-                var localEndPoint = new IPEndPoint(ipAddress, port);
-                socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                await socket.ConnectAsync(localEndPoint);
+                var localEndPoint = new IPEndPoint(ipAddress, Port);
+                await Socket.ConnectAsync(localEndPoint);
                 InvokeOpenedEvent();
                 await StartReceivingFromGameServer();
             }
@@ -42,26 +43,29 @@ namespace CSharpNetworking
 
         public async Task StartReceivingFromGameServer()
         {
-            var receivedBytes = Array.Empty<byte>();
-            var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
-            var ip = remoteEndPoint.Address;
-            var port = remoteEndPoint.Port;
+            var receivedBytes = new List<byte>();
+            var buffer = new ArraySegment<byte>(new byte[2048]);
             try
             {
                 while (true)
                 {
-                    var buffer = new ArraySegment<byte>(new byte[2048]);
-                    var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                    var bytesRead = await Socket.ReceiveAsync(buffer, SocketFlags.None);
                     if (bytesRead == 0) break;
 
-                    receivedBytes = receivedBytes.Concat(buffer.Array.Take(bytesRead)).ToArray();
                     var terminatorBytes = Terminator.VALUE_BYTES;
+                    var readBytes = buffer.Take(bytesRead);
+                    receivedBytes.AddRange(readBytes);
+                    
+                    // Only check buffer/new data to prevent unnecessary searching through the entire receivedBytes
+                    var terminatorIndexInBuffer = readBytes.IndexOf(terminatorBytes);
+                    if (terminatorIndexInBuffer == -1) continue;
+                    
                     var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     while (terminatorIndex != -1)
                     {
-                        var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                        var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
                         InvokeReceivedEvent(messageBytes);
-                        receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                        receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
                         terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     }
                 }
@@ -83,12 +87,12 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(byte[] bytes)
         {
-            var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
+            var remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
             var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
             var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
-            await socket.SendAsync(bytesArraySegment, SocketFlags.None);
+            await Socket.SendAsync(bytesArraySegment, SocketFlags.None);
             InvokeSentEvent(bytes);
         }
 
@@ -96,7 +100,7 @@ namespace CSharpNetworking
         {
             try
             {
-                if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
+                if (Socket.Connected) Socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
                 InvokeClosedEvent();
             }
             catch (Exception exception)
