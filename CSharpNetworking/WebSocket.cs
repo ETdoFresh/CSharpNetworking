@@ -158,8 +158,11 @@ namespace CSharpNetworking
             return closeConnectionRequested;
         }
 
-        public static byte[] ByteArrayToNetworkBytes(byte[] byteArray, bool masked = true)
+        public static byte[] ByteArrayToNetworkBytes(byte[] originalByteArray, bool masked = true)
         {
+            var byteArrayCopy = new byte[originalByteArray.Length];
+            originalByteArray.CopyTo(byteArrayCopy, 0);
+            
             var mask = masked ? 0b_1000_0000 : 0;
 
             List<byte> bytes;
@@ -174,19 +177,19 @@ namespace CSharpNetworking
             // 9-15: Payload Length
             // 16-31: Extended Payload
             // 32-64: Extended Payload 2
-            if (byteArray.Length < 126)
+            if (byteArrayCopy.Length < 126)
             {
-                bytes.Add((byte)(byteArray.Length + mask));
+                bytes.Add((byte)(byteArrayCopy.Length + mask));
             }
-            else if (byteArray.Length < 65536)
+            else if (byteArrayCopy.Length < 65536)
             {
                 bytes.Add((byte)(126 + mask));
-                bytes.AddRange(BitConverter.GetBytes((ushort)byteArray.Length).Reverse());
+                bytes.AddRange(BitConverter.GetBytes((ushort)byteArrayCopy.Length).Reverse());
             }
-            else if ((ulong)byteArray.Length <= 18446744073709551615)
+            else if ((ulong)byteArrayCopy.Length <= 18446744073709551615)
             {
                 bytes.Add((byte)(127 + mask));
-                bytes.AddRange(BitConverter.GetBytes((ulong)byteArray.Length).Reverse());
+                bytes.AddRange(BitConverter.GetBytes((ulong)byteArrayCopy.Length).Reverse());
             }
 
             // +0 or +4: If masked, 4-byte mask
@@ -200,13 +203,13 @@ namespace CSharpNetworking
 
             // Mask data if necessary
             if (masked)
-                for (int i = 0; i < byteArray.Length; i++)
+                for (int i = 0; i < byteArrayCopy.Length; i++)
                 {
                     var j = i % 4;
-                    byteArray[i] = (byte)(byteArray[i] ^ maskBytes[j]);
+                    byteArrayCopy[i] = (byte)(byteArrayCopy[i] ^ maskBytes[j]);
                 }
 
-            bytes.AddRange(byteArray);
+            bytes.AddRange(byteArrayCopy);
             return bytes.ToArray();
         }
 
