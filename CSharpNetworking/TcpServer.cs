@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -56,10 +57,7 @@ namespace CSharpNetworking
 
         private async Task AcceptNewClient()
         {
-            var socket = await this.Socket.AcceptAsync();
-            var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
-            var ip = remoteEndPoint.Address;
-            var port = remoteEndPoint.Port;
+            var socket = await Socket.AcceptAsync();
             InvokeOpenedEvent(socket);
             StartReceivingFromGameClient(socket);
             await AcceptNewClient();
@@ -67,26 +65,28 @@ namespace CSharpNetworking
 
         private async void StartReceivingFromGameClient(Socket socket)
         {
-            var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
-            var ip = remoteEndPoint.Address;
-            var port = remoteEndPoint.Port;
+            var receivedBytes = new List<byte>();
+            var buffer = new ArraySegment<byte>(new byte[2048]);
             try
             {
-                var receivedBytes = Array.Empty<byte>();
                 while (socket.Connected)
                 {
-                    var buffer = new ArraySegment<byte>(new byte[2048]);
                     var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
                     if (bytesRead == 0) break;
 
-                    receivedBytes = receivedBytes.Concat(buffer.Array.Take(bytesRead)).ToArray();
                     var terminatorBytes = Terminator.VALUE_BYTES;
+                    var readBytes = buffer.Take(bytesRead);
+                    receivedBytes.AddRange(readBytes);
+                    
+                    var terminatorIndexInReadBytes = readBytes.IndexOf(terminatorBytes);
+                    if (terminatorIndexInReadBytes == -1) continue;
+                    
                     var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     while (terminatorIndex != -1)
                     {
-                        var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                        var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
                         InvokeReceivedEvent(socket, messageBytes);
-                        receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                        receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
                         terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     }
                 }
@@ -105,9 +105,6 @@ namespace CSharpNetworking
         {
             try
             {
-                var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
-                var ip = remoteEndPoint.Address;
-                var port = remoteEndPoint.Port;
                 if (socket.Connected) socket.Disconnect(false);
                 InvokeClosedEvent(socket);
             }

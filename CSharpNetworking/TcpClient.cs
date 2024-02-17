@@ -56,9 +56,8 @@ namespace CSharpNetworking
                     var readBytes = buffer.Take(bytesRead);
                     receivedBytes.AddRange(readBytes);
                     
-                    // Only check buffer/new data to prevent unnecessary searching through the entire receivedBytes
-                    var terminatorIndexInBuffer = readBytes.IndexOf(terminatorBytes);
-                    if (terminatorIndexInBuffer == -1) continue;
+                    var terminatorIndexInReadBytes = readBytes.IndexOf(terminatorBytes);
+                    if (terminatorIndexInReadBytes == -1) continue;
                     
                     var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     while (terminatorIndex != -1)
@@ -87,9 +86,6 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(byte[] bytes)
         {
-            var remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
-            var ip = remoteEndPoint.Address;
-            var port = remoteEndPoint.Port;
             var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
             var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
             await Socket.SendAsync(bytesArraySegment, SocketFlags.None);
