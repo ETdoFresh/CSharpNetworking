@@ -18,6 +18,8 @@ namespace CSharpNetworking
     {
         private enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
 
+        public Action handshakeReceived;
+        
         public Uri uri;
         public Socket socket;
         
@@ -32,19 +34,18 @@ namespace CSharpNetworking
             var port = uri.Port;
 
             Console.WriteLine($"WebSocketServer: Starting on {uri}...");
-            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
+            var localEndPoint = new IPEndPoint(IPAddress.Any, port);
             if (host.ToLower() != "any" && host != "*")
             {
-                var ipHostInfo = Dns.GetHostEntry(host);
-                var ipAddress = ipHostInfo.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
+                var ipHostInfo = await Dns.GetHostEntryAsync(host);
+                var ipAddress = ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
                 localEndPoint = new IPEndPoint(ipAddress, port);
             }
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
             ServerOpened.Invoke();
-            Console.WriteLine($"WebSocketServer: Listening...");
-            await AcceptNewClient();
+            await AcceptNewClientAsync();
         }
 
         public override async Task CloseAsync()
@@ -55,19 +56,18 @@ namespace CSharpNetworking
                 socket.Dispose();
             }
             ServerClosed.Invoke();
-            Console.WriteLine($"WebSocketServer: Stop Listening...");
         }
 
-        private async Task AcceptNewClient()
+        private async Task AcceptNewClientAsync()
         {
-            Console.WriteLine("WebSocketServer: Waiting for a new client connection...");
-            var clientSocket = await socket.AcceptAsync();
-            var stream = GetNetworkStream(clientSocket);
-            var client = new SocketStream(clientSocket, stream);
-            Opened.Invoke(client);
-            Console.WriteLine($"WebSocketServer: A new client has connected {client.IP}:{client.Port}...");
-            StartHandshakeWithClient(client);
-            await AcceptNewClient();
+            while (true)
+            {
+                var clientSocket = await socket.AcceptAsync();
+                var stream = GetNetworkStream(clientSocket);
+                var client = new SocketStream(clientSocket, stream);
+                Opened.Invoke(client);
+                StartHandshakeWithClient(client);
+            }
         }
 
         private async void StartHandshakeWithClient(SocketStream client)
@@ -92,10 +92,10 @@ namespace CSharpNetworking
                             // 2. Concatenate it with "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" (a special GUID specified by RFC 6455)
                             // 3. Compute SHA-1 and Base64 hash of the new value
                             // 4. Write the hash back as the value of "Sec-WebSocket-Accept" response header in an HTTP response
-                            string swk = Regex.Match(message, "Sec-WebSocket-Key: (.*)").Groups[1].Value.Trim();
-                            string swka = swk + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-                            byte[] swkaSha1 = System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(swka));
-                            string swkaSha1Base64 = Convert.ToBase64String(swkaSha1);
+                            var swk = Regex.Match(message, "Sec-WebSocket-Key: (.*)").Groups[1].Value.Trim();
+                            var swka = swk + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+                            var swkaSha1 = System.Security.Cryptography.SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(swka));
+                            var swkaSha1Base64 = Convert.ToBase64String(swkaSha1);
 
                             // HTTP/1.1 defines the sequence CR LF as the end-of-line marker
                             var outgoingMessage = "HTTP/1.1 101 Switching Protocols\r\n" +
@@ -135,7 +135,7 @@ namespace CSharpNetworking
 
                     if (!WebSocket.IsDiconnectPacket(incomingBytes))
                     {
-                        var terminatorBytes = Terminator.BYTES;
+                        var terminatorBytes = Terminator.VALUE_BYTES;
                         var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         while (terminatorIndex != -1)
                         {

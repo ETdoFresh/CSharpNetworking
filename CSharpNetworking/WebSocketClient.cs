@@ -15,12 +15,15 @@ namespace CSharpNetworking
     public class WebSocketClient : BaseClient
     {
         public Uri uri;
-        [NonSerialized] public Socket socket;
+        public Socket socket;
         public Stream stream;
 
         public Action OnSocketConnected;
-        
-        public WebSocketClient(string uriString) { uri = new Uri(uriString); }
+
+        public WebSocketClient(string uriString)
+        {
+            uri = new Uri(uriString);
+        }
 
         public override async Task OpenAsync()
         {
@@ -28,14 +31,13 @@ namespace CSharpNetworking
             var port = uri.Port;
             try
             {
-                Console.Write($"WebSocketClient: Connecting to {uri}...");
-                var ipHostInfo = Dns.GetHostEntry(host);
-                var ipAddress = ipHostInfo.AddressList.Where((i) => i.AddressFamily == AddressFamily.InterNetwork).FirstOrDefault();
+                var ipHostInfo = await Dns.GetHostEntryAsync(host);
+                var ipAddress =
+                    ipHostInfo.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork);
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
                 OnSocketConnected.Invoke();
-                Console.WriteLine($"Connected!");
                 stream = GetNetworkStream();
                 await StartHandshakeWithServer();
             }
@@ -47,7 +49,7 @@ namespace CSharpNetworking
 
         private async Task StartHandshakeWithServer()
         {
-            var httpEOF = Encoding.UTF8.GetBytes("\r\n\r\n");
+            var httpEOF = Terminator.HTTP_BYTES;
             var received = new List<byte>();
             var buffer = new byte[2048];
             var host = uri.Host;
@@ -83,12 +85,12 @@ namespace CSharpNetworking
                     receivedBytes = receivedBytes.Concat(buffer.Take(bytesRead)).ToArray();
                     if (!WebSocket.IsDiconnectPacket(receivedBytes))
                     {
-                        var terminatorBytes = Terminator.BYTES;
+                        var terminatorBytes = Terminator.VALUE_BYTES;
                         var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         while (terminatorIndex != -1)
                         {
                             var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
-                            MessageReceived.Invoke(messageBytes);
+                            Received.Invoke(messageBytes);
                             receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
                             terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
@@ -113,17 +115,17 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(byte[] bytes)
         {
-            var message = Encoding.UTF8.GetString(bytes);
-            bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
-            await stream.WriteAsync(bytes, 0, bytes.Length);
-            Console.WriteLine($"WebSocketClient: Sent to {uri}: {message}");
+            var webSocketBytes = WebSocket.ByteArrayToNetworkBytes(bytes);
+            await stream.WriteAsync(webSocketBytes, 0, webSocketBytes.Length);
+            Sent.Invoke(bytes);
         }
 
         public override async Task CloseAsync()
         {
             try
             {
-                if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
+                if (socket.Connected)
+                    socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
                 Closed.Invoke();
                 Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
@@ -140,13 +142,14 @@ namespace CSharpNetworking
             var host = uri.Host;
             stream = new NetworkStream(socket);
             if (uri.Scheme.ToLower() != "wss") return stream;
-            
+
             stream = new SslStream(stream, false, ValidateServerCertificate, null);
             ((SslStream)stream).AuthenticateAsClient(host);
             return stream;
         }
 
-        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain,
+            SslPolicyErrors sslPolicyErrors)
         {
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;

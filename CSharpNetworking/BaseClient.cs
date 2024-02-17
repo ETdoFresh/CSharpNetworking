@@ -6,7 +6,8 @@ namespace CSharpNetworking
     public abstract class BaseClient
     {
         public Action Opened;
-        public Action<byte[]> MessageReceived;
+        public Action<byte[]> Received;
+        public Action<byte[]> Sent;
         public Action Closed;
         public Action<Exception> Error;
 

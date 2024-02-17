@@ -1,5 +1,6 @@
 ﻿using CSharpNetworking;
 using System;
+using System.Text;
 
 namespace ExampleWebSocketClient
 {
@@ -12,7 +13,11 @@ namespace ExampleWebSocketClient
             Console.ReadKey();
 
             var client = new WebSocketClient(uri);
+            client.Opened += () => { Console.WriteLine("Connected to server."); };
             client.Opened += () => { client.SendAsync("Hello World!"); };
+            client.Received += bytes => { Console.WriteLine($"Received from server: {Encoding.UTF8.GetString(bytes)}"); };
+            client.Sent += bytes => { Console.WriteLine($"Sent to server: {Encoding.UTF8.GetString(bytes)}"); };
+            client.Closed += () => { Console.WriteLine("Disconnected from server."); };
             client.OpenAsync();
             Console.ReadKey();
             

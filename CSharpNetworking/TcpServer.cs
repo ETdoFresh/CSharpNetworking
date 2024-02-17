@@ -85,7 +85,7 @@ namespace CSharpNetworking
                     if (bytesRead == 0) break;
 
                     receivedBytes = receivedBytes.Concat(buffer.Array.Take(bytesRead)).ToArray();
-                    var terminatorBytes = Terminator.BYTES;
+                    var terminatorBytes = Terminator.VALUE_BYTES;
                     var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     while (terminatorIndex != -1)
                     {
@@ -140,7 +140,7 @@ namespace CSharpNetworking
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
-            var bytesWithTerminator = bytes.Concat(Terminator.BYTES);
+            var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
             var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
             await socket.SendAsync(bytesArraySegment, SocketFlags.None);
             var message = Encoding.UTF8.GetString(bytes);
