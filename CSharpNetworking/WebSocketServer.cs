@@ -109,7 +109,7 @@ namespace CSharpNetworking
                         else
                             throw new Exception("WebSocketServer: Incoming websocket handshake message was not in the right format.");
 
-                        StartReceivingFromClient(client);
+                        ProcessReceivedData(client);
                         break;
                     }
                 }
@@ -121,7 +121,7 @@ namespace CSharpNetworking
             }
         }
 
-        private async void StartReceivingFromClient(SocketStream client)
+        private async void ProcessReceivedData(SocketStream client)
         {
             var receivedBytes = new List<byte>();
             var buffer = new byte[2048];
