@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
-    public abstract class IClient
+    public abstract class AbstractClient
     {
         public Action OnOpen;
         public Action<Message> OnMessage;

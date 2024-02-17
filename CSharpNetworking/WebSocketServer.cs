@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class WebSocketServer : IServer<SocketStream>
+    public class WebSocketServer : AbstractServer<SocketStream>
     {
         private enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
 

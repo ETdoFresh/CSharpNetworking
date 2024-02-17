@@ -8,7 +8,7 @@ namespace Example
         static void Main(string[] args)
         {
             var port = 9999;
-            var server = new TCPServer(port);
+            var server = new TcpServer(port);
             server.Open();
             Console.ReadKey();
         }

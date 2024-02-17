@@ -48,18 +48,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IClient.cs" />
-    <Compile Include="IServer.cs" />
+    <Compile Include="AbstractClient.cs" />
+    <Compile Include="AbstractServer.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketStream.cs" />
     <Compile Include="Terminator.cs" />
     <Compile Include="Utility.cs" />
     <Compile Include="WebSocketClient.cs" />
-    <Compile Include="TCPClient.cs" />
+    <Compile Include="TcpClient.cs" />
     <Compile Include="WebSocket.cs" />
     <Compile Include="WebSocketServer.cs" />
-    <Compile Include="TCPServer.cs" />
+    <Compile Include="TcpServer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
-    public abstract class IServer<TClient>
+    public abstract class AbstractServer<TClient>
     {
         public Action OnServerOpen;
         public Action OnServerClose;

@@ -8,15 +8,15 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class TCPServer : IServer<Socket>
+    public class TcpServer : AbstractServer<Socket>
     {
         public string hostNameOrAddress;
         public int port;
         [NonSerialized] public Socket socket;
         
-        public TCPServer(int port) : this("", port) { }
+        public TcpServer(int port) : this("", port) { }
 
-        public TCPServer(string hostNameOrAddress, int port)
+        public TcpServer(string hostNameOrAddress, int port)
         {
             this.hostNameOrAddress = hostNameOrAddress;
             this.port = port;
