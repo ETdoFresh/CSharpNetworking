@@ -70,28 +70,30 @@ namespace CSharpNetworking
                 received.AddRange(buffer.Take(bytesRead));
             }
             InvokeOpenedEvent();
-            await StartReceivingFromServer();
+            ProcessReceivedData();
         }
 
-        private async Task StartReceivingFromServer()
+        private async void ProcessReceivedData()
         {
-            var receivedBytes = Array.Empty<byte>();
+            var receivedBytes = new List<byte>();
             var buffer = new byte[2048];
             try
             {
                 while (true)
                 {
                     var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    receivedBytes = receivedBytes.Concat(buffer.Take(bytesRead)).ToArray();
+                    var readBytes = buffer.Take(bytesRead);
+                    receivedBytes.AddRange(readBytes);
+                    
                     if (!WebSocket.IsDiconnectPacket(receivedBytes))
                     {
                         var terminatorBytes = Terminator.VALUE_BYTES;
                         var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         while (terminatorIndex != -1)
                         {
-                            var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                            var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
                             InvokeReceivedEvent(messageBytes);
-                            receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                            receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
                             terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
                     }
@@ -127,13 +129,11 @@ namespace CSharpNetworking
                 if (socket.Connected)
                     socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
                 InvokeClosedEvent();
-                Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
                 InvokeErrorEvent(exception);
                 InvokeClosedEvent();
-                Console.WriteLine($"WebSocketClient: Unexpectedly disconnected. {exception.Message}");
             }
         }
 
@@ -154,7 +154,7 @@ namespace CSharpNetworking
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
-            Console.WriteLine($"WebSocketClient: Certificate error: {sslPolicyErrors}");
+            InvokeErrorEvent(new Exception($"WebSocketClient: Certificate error: {sslPolicyErrors}"));
             return false;
         }
     }

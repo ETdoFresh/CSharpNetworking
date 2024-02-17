@@ -59,11 +59,11 @@ namespace CSharpNetworking
         {
             var socket = await Socket.AcceptAsync();
             InvokeOpenedEvent(socket);
-            StartReceivingFromGameClient(socket);
+            ProcessReceivedData(socket);
             await AcceptNewClient();
         }
 
-        private async void StartReceivingFromGameClient(Socket socket)
+        private async void ProcessReceivedData(Socket socket)
         {
             var receivedBytes = new List<byte>();
             var buffer = new ArraySegment<byte>(new byte[2048]);

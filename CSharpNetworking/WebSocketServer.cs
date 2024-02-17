@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -122,25 +123,24 @@ namespace CSharpNetworking
 
         private async void StartReceivingFromClient(SocketStream client)
         {
+            var receivedBytes = new List<byte>();
+            var buffer = new byte[2048];
             try
             {
-                var receivedBytes = Array.Empty<byte>();
-                var buffer = new byte[2048];
                 while (client.socket.Connected)
                 {
                     var bytesRead = await client.stream.ReadAsync(buffer, 0, buffer.Length);
                     var incomingBytes = buffer.Take(bytesRead);
-                    receivedBytes = receivedBytes.Concat(incomingBytes).ToArray();
-
-                    if (!WebSocket.IsDiconnectPacket(incomingBytes))
+                    receivedBytes.AddRange(incomingBytes);
+                    if (!WebSocket.IsDiconnectPacket(receivedBytes))
                     {
                         var terminatorBytes = Terminator.VALUE_BYTES;
                         var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         while (terminatorIndex != -1)
                         {
-                            var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                            var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
                             InvokeReceivedEvent(client, messageBytes);
-                            receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                            receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
                             terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
                     }
@@ -163,19 +163,12 @@ namespace CSharpNetworking
             {
                 if (client.socket.Connected) client.socket.Disconnect(false);
                 InvokeClosedEvent(client);
-                Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} disconnected normally.");
             }
             catch (Exception exception)
             {
-                DisconnectError(exception, client);
+                InvokeClientErrorEvent(client, exception);
+                InvokeClosedEvent(client);
             }
-        }
-
-        private void DisconnectError(Exception exception, SocketStream client)
-        {
-            InvokeClientErrorEvent(client, exception);
-            InvokeClosedEvent(client);
-            Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} unexpectadely disconnected. {exception.Message}");
         }
 
         public override Task SendAsync(SocketStream client, string message)
