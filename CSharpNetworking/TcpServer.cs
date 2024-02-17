@@ -77,25 +77,23 @@ namespace CSharpNetworking
             var port = remoteEndPoint.Port;
             try
             {
-                var receivedMessage = "";
+                var receivedBytes = Array.Empty<byte>();
                 while (socket.Connected)
                 {
                     var buffer = new ArraySegment<byte>(new byte[2048]);
                     var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
                     if (bytesRead == 0) break;
 
-                    receivedMessage += Encoding.UTF8.GetString(buffer.Array, 0, bytesRead);
-                    if (receivedMessage.Contains(Terminator.VALUE))
+                    receivedBytes = receivedBytes.Concat(buffer.Array.Take(bytesRead)).ToArray();
+                    var terminatorBytes = Terminator.BYTES;
+                    var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
+                    while (terminatorIndex != -1)
                     {
-                        var messages = receivedMessage.Split(new[] { Terminator.VALUE }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var message in messages)
-                        {
-                            Console.WriteLine($"TCPServer: Received from {ip}:{port}: {message}{Terminator.CONSOLE}");
-                            ReceivedMessage.Invoke(new Message<Socket>(socket, message));
-                        }
+                        var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                        Received.Invoke(socket, messageBytes);
+                        receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                        terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     }
-                    while (receivedMessage.Contains(Terminator.VALUE))
-                        receivedMessage = receivedMessage.Substring(receivedMessage.IndexOf(Terminator.VALUE) + Terminator.VALUE.Length);
                 }
             }
             catch (Exception exception)

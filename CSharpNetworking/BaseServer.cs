@@ -8,7 +8,7 @@ namespace CSharpNetworking
         public Action ServerOpened;
         public Action ServerClosed;
         public Action<TClient> Opened;
-        public Action<Message<TClient>> ReceivedMessage;
+        public Action<TClient, byte[]> Received;
         public Action<TClient> Closed;
         public Action<Exception> Error;
 

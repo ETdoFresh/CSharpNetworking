@@ -73,23 +73,24 @@ namespace CSharpNetworking
 
         private async Task StartReceivingFromServer()
         {
-            var received = new List<byte>();
+            var receivedBytes = Array.Empty<byte>();
             var buffer = new byte[2048];
             try
             {
                 while (true)
                 {
                     var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    received.AddRange(buffer.Take(bytesRead));
-                    if (!WebSocket.IsDiconnectPacket(received))
+                    receivedBytes = receivedBytes.Concat(buffer.Take(bytesRead)).ToArray();
+                    if (!WebSocket.IsDiconnectPacket(receivedBytes))
                     {
-                        while (received.Count >= WebSocket.PacketLength(received))
+                        var terminatorBytes = Terminator.BYTES;
+                        var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
+                        while (terminatorIndex != -1)
                         {
-                            var bytes = WebSocket.NetworkingBytesToByteArray(received.ToArray());
-                            var message = new Message(bytes);
-                            MessageReceived.Invoke(message);
-                            Console.WriteLine($"WebSocketClient: Received from {uri}: {message}");
-                            received.RemoveRange(0, (int)WebSocket.PacketLength(received));
+                            var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                            MessageReceived.Invoke(messageBytes);
+                            receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                            terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
                     }
                     else break; // aka disconnect

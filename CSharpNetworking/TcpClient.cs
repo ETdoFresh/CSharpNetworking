@@ -44,7 +44,7 @@ namespace CSharpNetworking
 
         public async Task StartReceivingFromGameServer()
         {
-            var receivedMessage = "";
+            var receivedBytes = Array.Empty<byte>();
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
@@ -56,18 +56,16 @@ namespace CSharpNetworking
                     var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
                     if (bytesRead == 0) break;
 
-                    receivedMessage += Encoding.UTF8.GetString(buffer.Array, 0, bytesRead);
-                    if (receivedMessage.Contains(Terminator.VALUE))
+                    receivedBytes = receivedBytes.Concat(buffer.Array.Take(bytesRead)).ToArray();
+                    var terminatorBytes = Terminator.BYTES;
+                    var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
+                    while (terminatorIndex != -1)
                     {
-                        var messages = receivedMessage.Split(new[] { Terminator.VALUE }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var message in messages)
-                        {
-                            MessageReceived.Invoke(new Message(message));
-                            Console.WriteLine($"TCPClient: Received from {ip}:{port}: {message}{Terminator.CONSOLE}");
-                        }
+                        var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
+                        MessageReceived.Invoke(messageBytes);
+                        receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
+                        terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     }
-                    while (receivedMessage.Contains(Terminator.VALUE))
-                        receivedMessage = receivedMessage.Substring(receivedMessage.IndexOf(Terminator.VALUE) + Terminator.VALUE.Length);
                 }
             }
             catch(Exception exception)
