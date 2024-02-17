@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
-    public interface IClient
+    public abstract class IClient
     {
-        event EventHandler OnOpen;
-        event EventHandler<Message> OnMessage;
-        event EventHandler OnClose;
-        event EventHandler<Exception> OnError;
+        public Action OnOpen;
+        public Action<Message> OnMessage;
+        public Action OnClose;
+        public Action<Exception> OnError;
 
-        void Close();
-        void Send(byte[] bytes);
-        void Send(string message);
+        public abstract Task Open();
+        public abstract Task Close();
+        public abstract Task Send(byte[] bytes);
+        public abstract Task Send(string message);
     }
 }

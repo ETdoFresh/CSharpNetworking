@@ -18,23 +18,11 @@ namespace CSharpNetworking
         [NonSerialized] public Socket socket;
         public Stream stream;
 
-        public event EventHandler OnSocketConnected = delegate { };
-        public event EventHandler OnOpen = delegate { };
-        public event EventHandler<Message> OnMessage = delegate { };
-        public event EventHandler OnClose = delegate { };
-        public event EventHandler<Exception> OnError = delegate { };
+        public Action OnSocketConnected;
+        
+        public WebSocketClient(string uriString) { uri = new Uri(uriString); }
 
-        public WebSocketClient(string uriString)
-        {
-            uri = new Uri(uriString);
-        }
-
-        public void Open()
-        {
-            var doNotWait = OpenAsync();
-        }
-
-        public async Task OpenAsync()
+        public override async Task Open()
         {
             var host = uri.Host;
             var port = uri.Port;
@@ -46,14 +34,14 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
-                OnSocketConnected.Invoke(this, null);
+                OnSocketConnected.Invoke();
                 Console.WriteLine($"Connected!");
                 stream = GetNetworkStream();
-                var doNotWait = StartHandshakeWithServer();
+                await StartHandshakeWithServer();
             }
             catch (Exception exception)
             {
-                OnError.Invoke(this, exception);
+                OnError.Invoke(exception);
             }
         }
 
@@ -79,8 +67,8 @@ namespace CSharpNetworking
                 var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 received.AddRange(buffer.Take(bytesRead));
             }
-            OnOpen.Invoke(this, null);
-            var doNotWait = StartReceivingFromServer();
+            OnOpen.Invoke();
+            await StartReceivingFromServer();
         }
 
         private async Task StartReceivingFromServer()
@@ -99,7 +87,7 @@ namespace CSharpNetworking
                         {
                             var bytes = WebSocket.NetworkingBytesToByteArray(received.ToArray());
                             var message = new Message(bytes);
-                            OnMessage.Invoke(this, message);
+                            OnMessage.Invoke(message);
                             Console.WriteLine($"WebSocketClient: Received from {uri}: {message}");
                             received.RemoveRange(0, (int)WebSocket.PacketLength(received));
                         }
@@ -109,7 +97,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                OnError.Invoke(this, exception);
+                OnError.Invoke(exception);
             }
             finally
             {
@@ -117,17 +105,12 @@ namespace CSharpNetworking
             }
         }
 
-        public void Send(string message)
+        public override Task Send(string message)
         {
-            Send(Encoding.UTF8.GetBytes(message));
+            return Send(Encoding.UTF8.GetBytes(message));
         }
 
-        public void Send(byte[] bytes)
-        {
-            var doNotWait = SendAsync(bytes);
-        }
-
-        public async Task SendAsync(byte[] bytes)
+        public override async Task Send(byte[] bytes)
         {
             var message = Encoding.UTF8.GetString(bytes);
             bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
@@ -135,36 +118,30 @@ namespace CSharpNetworking
             Console.WriteLine($"WebSocketClient: Sent to {uri}: {message}");
         }
 
-        public void Close()
+        public override async Task Close()
         {
             try
             {
-                if (socket.Connected) socket.Disconnect(false);
-                OnClose.Invoke(this, null);
+                if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
+                OnClose.Invoke();
                 Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                CloseError(socket, exception);
+                OnError.Invoke(exception);
+                OnClose.Invoke();
+                Console.WriteLine($"WebSocketClient: Unexpectedly disconnected. {exception.Message}");
             }
-        }
-
-        private void CloseError(Socket socket, Exception exception)
-        {
-            OnError.Invoke(this, exception);
-            OnClose.Invoke(this, null);
-            Console.WriteLine($"WebSocketClient: Unexpectadely disconnected. {exception.Message}");
         }
 
         private Stream GetNetworkStream()
         {
             var host = uri.Host;
             stream = new NetworkStream(socket);
-            if (uri.Scheme.ToLower() == "wss")
-            {
-                stream = new SslStream(stream, false, ValidateServerCertificate, null);
-                ((SslStream)stream).AuthenticateAsClient(host);
-            }
+            if (uri.Scheme.ToLower() != "wss") return stream;
+            
+            stream = new SslStream(stream, false, ValidateServerCertificate, null);
+            ((SslStream)stream).AuthenticateAsClient(host);
             return stream;
         }
 

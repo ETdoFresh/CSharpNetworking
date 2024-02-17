@@ -20,20 +20,13 @@ namespace CSharpNetworking
 
         public Uri uri;
         public Socket socket;
-
-        public event EventHandler OnServerOpen = delegate { };
-        public event EventHandler<SocketStream> OnOpen = delegate { };
-        public event EventHandler<Message<SocketStream>> OnMessage = delegate { };
-        public event EventHandler<SocketStream> OnClose = delegate { };
-        public event EventHandler OnServerClose = delegate { };
-        public event EventHandler<Exception> OnError = delegate { };
-
+        
         public WebSocketServer(string uriString)
         {
             uri = new Uri(uriString);
         }
 
-        public void Open()
+        public override async Task Open()
         {
             var host = uri.Host;
             var port = uri.Port;
@@ -49,19 +42,19 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            OnServerOpen.Invoke(this, null);
+            OnServerOpen.Invoke();
             Console.WriteLine($"WebSocketServer: Listening...");
-            var doNotWait = AcceptNewClient();
+            await AcceptNewClient();
         }
 
-        public void Close()
+        public override async Task Close()
         {
             if (socket != null)
             {
                 socket.Close();
                 socket.Dispose();
             }
-            OnServerClose.Invoke(this, null);
+            OnServerClose.Invoke();
             Console.WriteLine($"WebSocketServer: Stop Listening...");
         }
 
@@ -71,10 +64,10 @@ namespace CSharpNetworking
             var clientSocket = await socket.AcceptAsync();
             var stream = GetNetworkStream(clientSocket);
             var client = new SocketStream(clientSocket, stream);
-            OnOpen.Invoke(this, client);
+            OnOpen.Invoke(client);
             Console.WriteLine($"WebSocketServer: A new client has connected {client.IP}:{client.Port}...");
             StartHandshakeWithClient(client);
-            var doNotWait = AcceptNewClient();
+            await AcceptNewClient();
         }
 
         private async void StartHandshakeWithClient(SocketStream client)
@@ -123,7 +116,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                OnError.Invoke(this, exception);
+                OnError.Invoke(exception);
                 Disconnect(client);
             }
         }
@@ -146,7 +139,7 @@ namespace CSharpNetworking
                         {
                             var message = WebSocket.BytesToString(received.ToArray());
                             received.RemoveRange(0, (int)WebSocket.PacketLength(received));
-                            OnMessage.Invoke(this, new Message<SocketStream>(client, message));
+                            OnMessage.Invoke(new Message<SocketStream>(client, message));
                             Console.WriteLine($"WebSocketServer: Received from {client.IP}:{client.Port}: {message}");
                         }
                     }
@@ -168,7 +161,7 @@ namespace CSharpNetworking
             try
             {
                 if (client.socket.Connected) client.socket.Disconnect(false);
-                OnClose.Invoke(this, client);
+                OnClose.Invoke(client);
                 Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} disconnected normally.");
             }
             catch (Exception exception)
@@ -179,22 +172,17 @@ namespace CSharpNetworking
 
         private void DisconnectError(Exception exception, SocketStream client)
         {
-            OnError.Invoke(this, exception);
-            OnClose.Invoke(this, client);
+            OnError.Invoke(exception);
+            OnClose.Invoke(client);
             Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} unexpectadely disconnected. {exception.Message}");
         }
 
-        public void Send(SocketStream client, string message)
+        public override Task Send(SocketStream client, string message)
         {
-            Send(client, Encoding.UTF8.GetBytes(message));
+            return Send(client, Encoding.UTF8.GetBytes(message));
         }
 
-        public void Send(SocketStream client, byte[] bytes)
-        {
-            var doNotWait = SendAsync(client, bytes);
-        }
-
-        public static async Task SendAsync(SocketStream client, byte[] bytes)
+        public override async Task Send(SocketStream client, byte[] bytes)
         {
             var message = Encoding.UTF8.GetString(bytes);
             bytes = WebSocket.ByteArrayToNetworkBytes(bytes);

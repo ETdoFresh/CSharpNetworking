@@ -14,11 +14,6 @@ namespace CSharpNetworking
         public int port;
         [NonSerialized] public Socket socket;
 
-        public event EventHandler OnOpen = delegate { };
-        public event EventHandler<Message> OnMessage = delegate { };
-        public event EventHandler OnClose = delegate { };
-        public event EventHandler<Exception> OnError = delegate { };
-
         public TCPClient(int port) : this("localhost", port) { }
 
         public TCPClient(string hostNameOrAddress, int port)
@@ -27,12 +22,7 @@ namespace CSharpNetworking
             this.port = port;
         }
 
-        public void Open()
-        {
-            var doNotWait = OpenAsync();
-        }
-
-        public async Task OpenAsync()
+        public override async Task Open()
         {
             try
             {
@@ -42,13 +32,13 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
-                OnOpen.Invoke(this, null);
+                OnOpen.Invoke();
                 Console.WriteLine($"Connected!");
                 var doNotWait = StartReceivingFromGameServer();
             }
             catch(Exception exception)
             {
-                OnError.Invoke(this, exception);
+                OnError.Invoke(exception);
             }
         }
 
@@ -72,7 +62,7 @@ namespace CSharpNetworking
                         var messages = receivedMessage.Split(new[] { Terminator.VALUE }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var message in messages)
                         {
-                            OnMessage.Invoke(this, new Message(message));
+                            OnMessage.Invoke(new Message(message));
                             Console.WriteLine($"TCPClient: Received from {ip}:{port}: {message}{Terminator.CONSOLE}");
                         }
                     }
@@ -82,25 +72,20 @@ namespace CSharpNetworking
             }
             catch(Exception exception)
             {
-                OnError.Invoke(this, exception);
+                OnError.Invoke(exception);
             }
             finally
             {
-                Close();
+                await Close();
             }
         }
 
-        public void Send(string message)
+        public override Task Send(string message)
         {
-            Send(Encoding.UTF8.GetBytes(message));
+            return Send(Encoding.UTF8.GetBytes(message));
         }
 
-        public void Send(byte[] bytes)
-        {
-            var doNotWait = SendAsync(bytes);
-        }
-
-        public async Task SendAsync(byte[] bytes)
+        public override async Task Send(byte[] bytes)
         {
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
@@ -112,25 +97,20 @@ namespace CSharpNetworking
             Console.WriteLine($"TCPClient: Sent to {ip}:{port}: {message}{Terminator.CONSOLE}");
         }
 
-        public void Close()
+        public override async Task Close()
         {
             try
             {
-                if (socket.Connected) socket.Disconnect(false);
-                OnClose.Invoke(this, null);
+                if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
+                OnClose.Invoke();
                 Console.WriteLine($"TCPClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                CloseError(socket, exception);
+                OnError.Invoke(exception);
+                OnClose.Invoke();
+                Console.WriteLine($"TCPClient: Unexpectedly disconnected. {exception.Message}");
             }
-        }
-
-        private void CloseError(Socket socket, Exception exception)
-        {
-            OnError.Invoke(this, exception);
-            OnClose.Invoke(this, null);
-            Console.WriteLine($"TCPClient: Unexpectadely disconnected. {exception.Message}");
         }
     }
 }

@@ -13,14 +13,7 @@ namespace CSharpNetworking
         public string hostNameOrAddress;
         public int port;
         [NonSerialized] public Socket socket;
-
-        public event EventHandler OnServerOpen = delegate { };
-        public event EventHandler<Socket> OnOpen = delegate { };
-        public event EventHandler<Message<Socket>> OnMessage = delegate { };
-        public event EventHandler<Socket> OnClose = delegate { };
-        public event EventHandler OnServerClose = delegate { };
-        public event EventHandler<Exception> OnError = delegate { };
-
+        
         public TCPServer(int port) : this("", port) { }
 
         public TCPServer(string hostNameOrAddress, int port)
@@ -29,7 +22,7 @@ namespace CSharpNetworking
             this.port = port;
         }
 
-        public void Open()
+        public override async Task Open()
         {
             IPEndPoint localEndPoint = null;
             
@@ -48,19 +41,19 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            OnServerOpen.Invoke(this, null);
-            var doNotWait = AcceptNewClient();
+            OnServerOpen.Invoke();
+            await AcceptNewClient();
             Console.WriteLine($"TCPServer: Listening...");
         }
 
-        public void Close()
+        public override async Task Close()
         {
             if (socket != null)
             {
                 socket.Close();
                 socket.Dispose();
             }
-            OnServerClose.Invoke(this, null);
+            OnServerClose.Invoke();
             Console.WriteLine($"TCPServer: Stop Listening...");
         }
 
@@ -72,9 +65,9 @@ namespace CSharpNetworking
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
             Console.WriteLine($"TCPServer: A new client has connected {ip}:{port}...");
-            OnOpen.Invoke(this, socket);
+            OnOpen.Invoke(socket);
             StartReceivingFromGameClient(socket);
-            var doNotWait = AcceptNewClient();
+            await AcceptNewClient();
         }
 
         private async void StartReceivingFromGameClient(Socket socket)
@@ -98,7 +91,7 @@ namespace CSharpNetworking
                         foreach (var message in messages)
                         {
                             Console.WriteLine($"TCPServer: Received from {ip}:{port}: {message}{Terminator.CONSOLE}");
-                            OnMessage.Invoke(this, new Message<Socket>(socket, message));
+                            OnMessage.Invoke(new Message<Socket>(socket, message));
                         }
                     }
                     while (receivedMessage.Contains(Terminator.VALUE))
@@ -107,7 +100,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                OnError.Invoke(this, exception);
+                OnError.Invoke(exception);
             }
             finally
             {
@@ -123,7 +116,7 @@ namespace CSharpNetworking
                 var ip = remoteEndPoint.Address;
                 var port = remoteEndPoint.Port;
                 if (socket.Connected) socket.Disconnect(false);
-                OnClose.Invoke(this, socket);
+                OnClose.Invoke(socket);
                 Console.WriteLine($"TCPServer: Client {ip}:{port} disconnected normally.");
             }
             catch (Exception exception)
@@ -134,22 +127,17 @@ namespace CSharpNetworking
 
         private void ClientDisconnectError(Socket socket, Exception exception)
         {
-            OnError.Invoke(this, exception);
-            OnClose.Invoke(this, socket);
+            OnError.Invoke(exception);
+            OnClose.Invoke(socket);
             Console.WriteLine($"TCPServer: Client unexpectadely disconnected. {exception.Message}");
         }
 
-        public void Send(Socket socket, string message)
+        public override Task Send(Socket socket, string message)
         {
-            Send(socket, Encoding.UTF8.GetBytes(message));
+            return Send(socket, Encoding.UTF8.GetBytes(message));
         }
 
-        public void Send(Socket socket, byte[] bytes)
-        {
-            var doNotWait = SendAsync(socket, bytes);
-        }
-
-        public async Task SendAsync(Socket socket, byte[] bytes)
+        public override async Task Send(Socket socket, byte[] bytes)
         {
             var remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             var ip = remoteEndPoint.Address;
