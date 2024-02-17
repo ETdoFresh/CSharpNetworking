@@ -9,6 +9,7 @@ namespace CSharpNetworking
         public Action ServerClosed;
         public Action<TClient> Opened;
         public Action<TClient, byte[]> Received;
+        public Action<TClient, byte[]> Sent;
         public Action<TClient> Closed;
         public Action<Exception> Error;
 

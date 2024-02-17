@@ -44,7 +44,7 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            ServerOpened.Invoke();
+            ServerOpened?.Invoke();
             await AcceptNewClientAsync();
         }
 
@@ -55,7 +55,7 @@ namespace CSharpNetworking
                 socket.Close();
                 socket.Dispose();
             }
-            ServerClosed.Invoke();
+            ServerClosed?.Invoke();
         }
 
         private async Task AcceptNewClientAsync()
@@ -65,7 +65,7 @@ namespace CSharpNetworking
                 var clientSocket = await socket.AcceptAsync();
                 var stream = GetNetworkStream(clientSocket);
                 var client = new SocketStream(clientSocket, stream);
-                Opened.Invoke(client);
+                Opened?.Invoke(client);
                 StartHandshakeWithClient(client);
             }
         }
@@ -116,7 +116,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                Error.Invoke(exception);
+                Error?.Invoke(exception);
                 Disconnect(client);
             }
         }
@@ -140,7 +140,7 @@ namespace CSharpNetworking
                         while (terminatorIndex != -1)
                         {
                             var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
-                            Received.Invoke(client, messageBytes);
+                            Received?.Invoke(client, messageBytes);
                             receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
                             terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
@@ -163,7 +163,7 @@ namespace CSharpNetworking
             try
             {
                 if (client.socket.Connected) client.socket.Disconnect(false);
-                Closed.Invoke(client);
+                Closed?.Invoke(client);
                 Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} disconnected normally.");
             }
             catch (Exception exception)
@@ -174,8 +174,8 @@ namespace CSharpNetworking
 
         private void DisconnectError(Exception exception, SocketStream client)
         {
-            Error.Invoke(exception);
-            Closed.Invoke(client);
+            Error?.Invoke(exception);
+            Closed?.Invoke(client);
             Console.WriteLine($"WebSocketServer: Client {client.IP}:{client.Port} unexpectadely disconnected. {exception.Message}");
         }
 
@@ -186,10 +186,9 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(SocketStream client, byte[] bytes)
         {
-            var message = Encoding.UTF8.GetString(bytes);
             bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
             await client.stream.WriteAsync(bytes, 0, bytes.Length);
-            Console.WriteLine($"WebSocketClient: Sent to {client.IP}:{client.Port}: {message}");
+            Sent?.Invoke(client, bytes);
         }
 
         private Stream GetNetworkStream(Socket socket)

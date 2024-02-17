@@ -37,13 +37,13 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
-                OnSocketConnected.Invoke();
+                OnSocketConnected?.Invoke();
                 stream = GetNetworkStream();
                 await StartHandshakeWithServer();
             }
             catch (Exception exception)
             {
-                Error.Invoke(exception);
+                Error?.Invoke(exception);
             }
         }
 
@@ -69,7 +69,7 @@ namespace CSharpNetworking
                 var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 received.AddRange(buffer.Take(bytesRead));
             }
-            Opened.Invoke();
+            Opened?.Invoke();
             await StartReceivingFromServer();
         }
 
@@ -90,7 +90,7 @@ namespace CSharpNetworking
                         while (terminatorIndex != -1)
                         {
                             var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
-                            Received.Invoke(messageBytes);
+                            Received?.Invoke(messageBytes);
                             receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
                             terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
@@ -100,7 +100,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                Error.Invoke(exception);
+                Error?.Invoke(exception);
             }
             finally
             {
@@ -117,7 +117,7 @@ namespace CSharpNetworking
         {
             var webSocketBytes = WebSocket.ByteArrayToNetworkBytes(bytes);
             await stream.WriteAsync(webSocketBytes, 0, webSocketBytes.Length);
-            Sent.Invoke(bytes);
+            Sent?.Invoke(bytes);
         }
 
         public override async Task CloseAsync()
@@ -126,13 +126,13 @@ namespace CSharpNetworking
             {
                 if (socket.Connected)
                     socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
-                Closed.Invoke();
+                Closed?.Invoke();
                 Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                Error.Invoke(exception);
-                Closed.Invoke();
+                Error?.Invoke(exception);
+                Closed?.Invoke();
                 Console.WriteLine($"WebSocketClient: Unexpectedly disconnected. {exception.Message}");
             }
         }
