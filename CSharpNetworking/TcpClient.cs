@@ -32,13 +32,13 @@ namespace CSharpNetworking
                 var localEndPoint = new IPEndPoint(ipAddress, port);
                 socket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 await socket.ConnectAsync(localEndPoint);
-                Opened?.Invoke();
+                InvokeOpenedEvent();
                 Console.WriteLine($"Connected!");
                 var doNotWait = StartReceivingFromGameServer();
             }
             catch(Exception exception)
             {
-                Error?.Invoke(exception);
+                InvokeErrorEvent(exception);
             }
         }
 
@@ -62,7 +62,7 @@ namespace CSharpNetworking
                     while (terminatorIndex != -1)
                     {
                         var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
-                        Received?.Invoke(messageBytes);
+                        InvokeReceivedEvent(messageBytes);
                         receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
                         terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     }
@@ -70,7 +70,7 @@ namespace CSharpNetworking
             }
             catch(Exception exception)
             {
-                Error?.Invoke(exception);
+                InvokeErrorEvent(exception);
             }
             finally
             {
@@ -91,7 +91,7 @@ namespace CSharpNetworking
             var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
             var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
             await socket.SendAsync(bytesArraySegment, SocketFlags.None);
-            Sent?.Invoke(bytes);
+            InvokeSentEvent(bytes);
         }
 
         public override async Task CloseAsync()
@@ -99,13 +99,13 @@ namespace CSharpNetworking
             try
             {
                 if (socket.Connected) socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
-                Closed?.Invoke();
+                InvokeClosedEvent();
                 Console.WriteLine($"TCPClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                Error?.Invoke(exception);
-                Closed?.Invoke();
+                InvokeErrorEvent(exception);
+                InvokeClosedEvent();
                 Console.WriteLine($"TCPClient: Unexpectedly disconnected. {exception.Message}");
             }
         }

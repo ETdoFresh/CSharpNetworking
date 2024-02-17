@@ -43,7 +43,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                Error?.Invoke(exception);
+                InvokeErrorEvent(exception);
             }
         }
 
@@ -69,7 +69,7 @@ namespace CSharpNetworking
                 var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 received.AddRange(buffer.Take(bytesRead));
             }
-            Opened?.Invoke();
+            InvokeOpenedEvent();
             await StartReceivingFromServer();
         }
 
@@ -90,7 +90,7 @@ namespace CSharpNetworking
                         while (terminatorIndex != -1)
                         {
                             var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
-                            Received?.Invoke(messageBytes);
+                            InvokeReceivedEvent(messageBytes);
                             receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
                             terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                         }
@@ -100,7 +100,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                Error?.Invoke(exception);
+                InvokeErrorEvent(exception);
             }
             finally
             {
@@ -117,7 +117,7 @@ namespace CSharpNetworking
         {
             var webSocketBytes = WebSocket.ByteArrayToNetworkBytes(bytes);
             await stream.WriteAsync(webSocketBytes, 0, webSocketBytes.Length);
-            Sent?.Invoke(bytes);
+            InvokeSentEvent(bytes);
         }
 
         public override async Task CloseAsync()
@@ -126,13 +126,13 @@ namespace CSharpNetworking
             {
                 if (socket.Connected)
                     socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
-                Closed?.Invoke();
+                InvokeClosedEvent();
                 Console.WriteLine($"WebSocketClient: Disconnected normally.");
             }
             catch (Exception exception)
             {
-                Error?.Invoke(exception);
-                Closed?.Invoke();
+                InvokeErrorEvent(exception);
+                InvokeClosedEvent();
                 Console.WriteLine($"WebSocketClient: Unexpectedly disconnected. {exception.Message}");
             }
         }

@@ -1,9 +1,5 @@
 ﻿using CSharpNetworking;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExampleTCPClient
 {
@@ -17,6 +13,8 @@ namespace ExampleTCPClient
             Console.ReadKey();
 
             var client = new TcpClient(port);
+            client.Opened += () => Console.WriteLine("Connected to server");
+            client.Closed += () => Console.WriteLine("Disconnected from server");
             client.OpenAsync();
             Console.ReadKey();
             client.CloseAsync();

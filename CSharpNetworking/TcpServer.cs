@@ -41,7 +41,7 @@ namespace CSharpNetworking
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(localEndPoint);
             socket.Listen(100);
-            ServerOpened?.Invoke();
+            InvokeServerOpenedEvent();
             await AcceptNewClient();
             Console.WriteLine($"TCPServer: Listening...");
         }
@@ -53,7 +53,7 @@ namespace CSharpNetworking
                 socket.Close();
                 socket.Dispose();
             }
-            ServerClosed?.Invoke();
+            InvokeServerClosedEvent();
             Console.WriteLine($"TCPServer: Stop Listening...");
         }
 
@@ -65,7 +65,7 @@ namespace CSharpNetworking
             var ip = remoteEndPoint.Address;
             var port = remoteEndPoint.Port;
             Console.WriteLine($"TCPServer: A new client has connected {ip}:{port}...");
-            Opened?.Invoke(socket);
+            InvokeOpenedEvent(socket);
             StartReceivingFromGameClient(socket);
             await AcceptNewClient();
         }
@@ -90,7 +90,7 @@ namespace CSharpNetworking
                     while (terminatorIndex != -1)
                     {
                         var messageBytes = receivedBytes.Take(terminatorIndex).ToArray();
-                        Received?.Invoke(socket, messageBytes);
+                        InvokeReceivedEvent(socket, messageBytes);
                         receivedBytes = receivedBytes.Skip(terminatorIndex + terminatorBytes.Length).ToArray();
                         terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
                     }
@@ -98,7 +98,7 @@ namespace CSharpNetworking
             }
             catch (Exception exception)
             {
-                Error?.Invoke(exception);
+                InvokeErrorEvent(exception);
             }
             finally
             {
@@ -114,7 +114,7 @@ namespace CSharpNetworking
                 var ip = remoteEndPoint.Address;
                 var port = remoteEndPoint.Port;
                 if (socket.Connected) socket.Disconnect(false);
-                Closed?.Invoke(socket);
+                InvokeClosedEvent(socket);
                 Console.WriteLine($"TCPServer: Client {ip}:{port} disconnected normally.");
             }
             catch (Exception exception)
@@ -125,8 +125,8 @@ namespace CSharpNetworking
 
         private void ClientDisconnectError(Socket socket, Exception exception)
         {
-            Error?.Invoke(exception);
-            Closed?.Invoke(socket);
+            InvokeErrorEvent(exception);
+            InvokeClosedEvent(socket);
             Console.WriteLine($"TCPServer: Client unexpectadely disconnected. {exception.Message}");
         }
 
@@ -140,7 +140,7 @@ namespace CSharpNetworking
             var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
             var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
             await socket.SendAsync(bytesArraySegment, SocketFlags.None);
-            Sent?.Invoke(socket, bytes);
+            InvokeSentEvent(socket, bytes);
         }
 
         public void Disconnect(Socket socket)
