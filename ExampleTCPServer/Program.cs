@@ -13,11 +13,12 @@ namespace ExampleTCPServer
         {
             var ip = "0.0.0.0";
             var port = 9999;
+            var bufferSize = 2048;
 
             Console.WriteLine($"This is an example TCP Server.");
             Console.WriteLine($"Starting server on tcp://{ip}:{port}..."); 
 
-            var server = new TcpServer(ip, port);
+            var server = new TcpServer(ip, port, bufferSize);
             server.ServerOpened += () => Console.WriteLine("Server started!");
             server.ServerClosed += () => Console.WriteLine("Server stopped!");
             server.ServerError += (e) => Console.WriteLine($"Server error: {e.Message}");

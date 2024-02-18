@@ -14,6 +14,8 @@ namespace CSharpNetworking
         public event Action<TClient, byte[]> ClientSent;
         public event Action<TClient, Exception> ClientError;
 
+        protected int _bufferSize;
+        
         public abstract Task OpenAsync();
         public abstract void Close();
         public abstract Task SendAsync(TClient client, byte[] bytes);

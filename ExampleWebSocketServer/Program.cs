@@ -1,8 +1,5 @@
 ﻿using CSharpNetworking;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ExampleWebSocketServer
 {
@@ -10,7 +7,10 @@ namespace ExampleWebSocketServer
     {
         static void Main(string[] args)
         {
-            var server = new WebSocketServer("wss://localhost:11001");
+            var uri = "wss://localhost:11001";
+            var bufferSize = 2048;
+            
+            var server = new WebSocketServer(uri, bufferSize);
             server.OpenAsync();
             Console.ReadKey();
         }

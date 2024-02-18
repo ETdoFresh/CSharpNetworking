@@ -23,8 +23,9 @@ namespace CSharpNetworking
         public Uri uri;
         public Socket serverSocket;
         
-        public WebSocketServer(string uriString)
+        public WebSocketServer(string uriString, int bufferSize = 2048)
         {
+            _bufferSize = bufferSize;
             uri = new Uri(uriString);
         }
 
@@ -77,7 +78,7 @@ namespace CSharpNetworking
                 var message = "";
                 while (client.Socket.Connected)
                 {
-                    var buffer = new byte[2048];
+                    var buffer = new byte[_bufferSize];
                     var bytesRead = await client.Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (bytesRead == 0) break;
 

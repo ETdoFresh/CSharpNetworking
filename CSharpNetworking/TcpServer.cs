@@ -13,15 +13,16 @@ namespace CSharpNetworking
         public string HostNameOrAddress { get; }
         public int Port { get; }
         public Socket Socket { get; }
-        
-        public TcpServer(int port) : this("", port) { }
 
-        public TcpServer(string hostNameOrAddress, int port)
+        public TcpServer(string hostNameOrAddress, int port, int bufferSize = 2048)
         {
             HostNameOrAddress = hostNameOrAddress;
             Port = port;
             Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _bufferSize = bufferSize;
         }
+
+        public TcpServer(int port) : this("", port) { }
 
         public override async Task OpenAsync()
         {
@@ -69,7 +70,7 @@ namespace CSharpNetworking
 
         private async void ProcessReceivedData(SocketStream client)
         {
-            var buffer = new byte[2048];
+            var buffer = new byte[_bufferSize];
             try
             {
                 while (client.Socket.Connected)

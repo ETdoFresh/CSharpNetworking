@@ -10,6 +10,8 @@ namespace CSharpNetworking
         public event Action<byte[]> Sent;
         public event Action Closed;
         public event Action<Exception> Error;
+        
+        protected int _bufferSize;
 
         public abstract Task OpenAsync();
         public abstract void Close();

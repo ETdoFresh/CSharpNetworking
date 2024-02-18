@@ -20,9 +20,10 @@ namespace CSharpNetworking
 
         public Action OnSocketConnected;
 
-        public WebSocketClient(string uriString)
+        public WebSocketClient(string uriString, int bufferSize = 2048)
         {
             uri = new Uri(uriString);
+            _bufferSize = bufferSize;
         }
 
         public override async Task OpenAsync()
@@ -75,7 +76,7 @@ namespace CSharpNetworking
 
         private async void ProcessReceivedData()
         {
-            var buffer = new byte[2048];
+            var buffer = new byte[_bufferSize];
             try
             {
                 while (true)

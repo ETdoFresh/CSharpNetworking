@@ -10,11 +10,12 @@ namespace ExampleWebSocketClient
         private static async Task Main(string[] args)
         {
             var uri = "wss://echo.websocket.org";
+            var bufferSize = 2048;
             
             Console.WriteLine($"This is an example WebSocket Client. Press any key to connect to {uri}");
             Console.ReadKey();
 
-            var client = new WebSocketClient(uri);
+            var client = new WebSocketClient(uri, bufferSize);
             client.Opened += () => { Console.WriteLine("Connected to server."); };
             client.Closed += () => { Console.WriteLine("Disconnected from server."); };
             client.Error += e => { Console.WriteLine($"Error: {e.Message}"); };
