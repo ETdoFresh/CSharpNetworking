@@ -19,7 +19,7 @@ namespace CSharpNetworking
             HostNameOrAddress = hostNameOrAddress;
             Port = port;
             Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _bufferSize = bufferSize;
+            BufferSize = bufferSize;
         }
 
         public TcpServer(int port) : this("", port) { }
@@ -70,7 +70,7 @@ namespace CSharpNetworking
 
         private async void ProcessReceivedData(SocketStream client)
         {
-            var buffer = new byte[_bufferSize];
+            var buffer = new byte[BufferSize];
             try
             {
                 while (client.Socket.Connected)

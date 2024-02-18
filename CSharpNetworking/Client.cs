@@ -11,7 +11,7 @@ namespace CSharpNetworking
         public event Action Closed;
         public event Action<Exception> Error;
         
-        protected int _bufferSize;
+        public int BufferSize { get; protected set; }
 
         public abstract Task OpenAsync();
         public abstract void Close();

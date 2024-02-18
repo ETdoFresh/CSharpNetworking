@@ -11,7 +11,7 @@ namespace ExampleWebSocketServer
         
         private static void Main(string[] args)
         {
-            var uri = "wss://0.0.0.0:11001";
+            var uri = "wss://localhost:11001";
             var bufferSize = 2048;
             
             Console.WriteLine($"This is an example WebSocket Server.");
