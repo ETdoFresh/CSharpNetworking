@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -14,7 +15,7 @@ namespace CSharpNetworking
         public string HostNameOrAddress { get; }
         public int Port { get; }
         public Socket Socket { get; }
-
+        
         public TcpServer(int port) : this("", port) { }
 
         public TcpServer(string hostNameOrAddress, int port)
@@ -27,22 +28,26 @@ namespace CSharpNetworking
         public override async Task OpenAsync()
         {
             IPEndPoint localEndPoint;
-            
-            if (string.IsNullOrEmpty(HostNameOrAddress) || HostNameOrAddress == "0.0.0.0" || HostNameOrAddress == "::/0")
+
+            if (string.IsNullOrEmpty(HostNameOrAddress) || HostNameOrAddress == "0.0.0.0" ||
+                HostNameOrAddress == "::/0")
             {
                 localEndPoint = new IPEndPoint(IPAddress.Any, Port);
             }
             else
             {
                 var ipHostInfo = await Dns.GetHostEntryAsync(HostNameOrAddress);
-                var ipAddress = ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+                var ipAddress =
+                    ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
                 localEndPoint = new IPEndPoint(ipAddress, Port);
             }
-            
+
             Socket.Bind(localEndPoint);
             Socket.Listen(100);
             InvokeServerOpenedEvent();
-            await AcceptNewClient();
+
+            while (true)
+                await AcceptNewClient();
         }
 
         public override async Task CloseAsync()
@@ -60,35 +65,20 @@ namespace CSharpNetworking
             var socket = await Socket.AcceptAsync();
             InvokeOpenedEvent(socket);
             ProcessReceivedData(socket);
-            await AcceptNewClient();
         }
 
         private async void ProcessReceivedData(Socket socket)
         {
-            var receivedBytes = new List<byte>();
-            var buffer = new ArraySegment<byte>(new byte[2048]);
+            var buffer = new byte[2048];
             try
             {
+                var stream = new NetworkStream(socket);
                 while (socket.Connected)
                 {
-                    var bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None);
+                    var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                     if (bytesRead == 0) break;
-
-                    var terminatorBytes = Terminator.VALUE_BYTES;
-                    var readBytes = buffer.Take(bytesRead);
-                    receivedBytes.AddRange(readBytes);
-                    
-                    var terminatorIndexInReadBytes = readBytes.IndexOf(terminatorBytes);
-                    if (terminatorIndexInReadBytes == -1) continue;
-                    
-                    var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
-                    while (terminatorIndex != -1)
-                    {
-                        var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
-                        InvokeReceivedEvent(socket, messageBytes);
-                        receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
-                        terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
-                    }
+                    var incomingBytes = buffer.Take(bytesRead).ToArray();
+                    InvokeReceivedEvent(socket, incomingBytes);
                 }
             }
             catch (Exception exception)
@@ -122,9 +112,9 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(Socket socket, byte[] bytes)
         {
-            var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
-            var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
-            await socket.SendAsync(bytesArraySegment, SocketFlags.None);
+            var stream = new NetworkStream(socket);
+            await stream.WriteAsync(bytes, 0, bytes.Length);
+            await stream.FlushAsync();
             InvokeSentEvent(socket, bytes);
         }
 

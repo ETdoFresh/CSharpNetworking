@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -14,6 +15,7 @@ namespace CSharpNetworking
         public string HostNameOrAddress { get; }
         public int Port { get; }
         public Socket Socket { get; }
+        public Stream Stream { get; private set; }
 
         public TcpClient(int port) : this("localhost", port) { }
 
@@ -29,13 +31,15 @@ namespace CSharpNetworking
             try
             {
                 var ipHostInfo = await Dns.GetHostEntryAsync(HostNameOrAddress);
-                var ipAddress = ipHostInfo.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork);
+                var ipAddress =
+                    ipHostInfo.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork);
                 var localEndPoint = new IPEndPoint(ipAddress, Port);
                 await Socket.ConnectAsync(localEndPoint);
+                Stream = new NetworkStream(Socket);
                 InvokeOpenedEvent();
                 ProcessReceivedData();
             }
-            catch(Exception exception)
+            catch (Exception exception)
             {
                 InvokeErrorEvent(exception);
             }
@@ -43,33 +47,18 @@ namespace CSharpNetworking
 
         private async void ProcessReceivedData()
         {
-            var receivedBytes = new List<byte>();
-            var buffer = new ArraySegment<byte>(new byte[2048]);
+            var buffer = new byte[2048];
             try
             {
                 while (true)
                 {
-                    var bytesRead = await Socket.ReceiveAsync(buffer, SocketFlags.None);
+                    var bytesRead = await Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (bytesRead == 0) break;
-
-                    var terminatorBytes = Terminator.VALUE_BYTES;
-                    var readBytes = buffer.Take(bytesRead);
-                    receivedBytes.AddRange(readBytes);
-                    
-                    var terminatorIndexInReadBytes = readBytes.IndexOf(terminatorBytes);
-                    if (terminatorIndexInReadBytes == -1) continue;
-                    
-                    var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
-                    while (terminatorIndex != -1)
-                    {
-                        var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
-                        InvokeReceivedEvent(messageBytes);
-                        receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
-                        terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
-                    }
+                    var incomingBytes = buffer.Take(bytesRead).ToArray();
+                    InvokeReceivedEvent(incomingBytes);
                 }
             }
-            catch(Exception exception)
+            catch (Exception exception)
             {
                 InvokeErrorEvent(exception);
             }
@@ -86,9 +75,8 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(byte[] bytes)
         {
-            var bytesWithTerminator = bytes.Concat(Terminator.VALUE_BYTES);
-            var bytesArraySegment = new ArraySegment<byte>(bytesWithTerminator.ToArray());
-            await Socket.SendAsync(bytesArraySegment, SocketFlags.None);
+            await Stream.WriteAsync(bytes, 0, bytes.Length);
+            await Stream.FlushAsync();
             InvokeSentEvent(bytes);
         }
 
@@ -96,7 +84,8 @@ namespace CSharpNetworking
         {
             try
             {
-                if (Socket.Connected) Socket.DisconnectAsync(new SocketAsyncEventArgs{ DisconnectReuseSocket = false });
+                if (Socket.Connected)
+                    Socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
                 InvokeClosedEvent();
             }
             catch (Exception exception)
