@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"> <!-- Sdk="Microsoft.NET.Sdk">-->
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -12,6 +12,21 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+
+    <TargetFramework>net471</TargetFramework>
+    <PackageId>com.etdofresh.csharpnetworking</PackageId>
+    <Version>0.0.3</Version>
+    <Authors>ETdoFresh</Authors>
+    <Company>ETdoFresh</Company>
+    <Product>CSharpNetworking</Product>
+    <Description>CSharpNetworking</Description>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ETdoFresh/CSharpNetworking/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ETdoFresh/CSharpNetworking/</RepositoryUrl>
+    <PackageTags>Tag1 Tag2</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <LangVersion>10</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -32,7 +47,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>none</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>    
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -56,7 +71,7 @@
     <Compile Include="TcpServer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\README.md">
+    <None Include="..\README.md" Pack="true" PackagePath="\">
       <Link>README.md</Link>
     </None>
     <None Include="App.config" />
