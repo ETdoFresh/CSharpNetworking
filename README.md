@@ -1,30 +1,29 @@
 # C# Networking
 This project is the basic implementation of these low level networking protocols
 
-- **TCP** (\r\n terminated)
-- **WebSocket**
-- ~~**UDP**~~ *(Not yet)*
+- **TCP** (Server and Client)
+- **WebSocket** (~~Server and~~ Client)
+- ~~**UDP** (Server and Client)~~
 
-## Interfaces
-Each protocol implements interfaces IServer or IClient which require that the protocol launches the following events when:
+## Abstract Classes
+Each protocol implements abstract class Server or Client which require that the protocol launches the following events when:
 
-### IServer\<T>
-- `OnServerOpen(object server)` When the server is started and listening for clients
-- `OnServerClose(object server)` When the server stops listening for clients
-- `OnOpen(object server, T client)` When a client connects to the server
-- `OnMessage(object server, Message<T> message)` When server receives a message from a client
-- `OnClose(object server, T client)` When a client disconnects from the server
-- `OnError(Exception exception)` When there is an exception on the server
+### Server\<T> Events
+- `ServerOpened()` When the server is started and listening for clients
+- `ServerClosed()` When the server stops listening for clients
+- `ServerError(Exception exception)` When there is an exception on the server
+- `ClientConnected(T client)` When a client connects to the server
+- `ClientDisconnected(T client)` When a client disconnects from the server
+- `ClientReceived(T client, byte[] bytes)` When the server receives a bytes from a client
+- `ClientSent(T client, byte[] bytes)` When the server sends a bytes to a client
+- `ClientError(T client, Exception exception)` When there is an exception with the client connection
 
-### IClient
-- `OnOpen(object client)` When the client connects to the server
-- `OnMessage(object client, Message message)` When the client receives a message from the server
-- `OnClose(object client)` When the client disconnects from the server
-- `OnError(Exception exception)` When there is an exception on the client
+### SocketStream Class
+The Servers in this project use the SocketStream class \<T> to represent a client connection. It includes the client's Socket and NetworkStream.
 
-## Message and Message\<T> Classes
-The Message and Message\<T> classes contain the data transferred between server and client. It contains the following fields:
-
-- `string data` A UTF8 encoded message
-- `byte[] rawData` An array of bytes representing the message
-- `T client` A generically typed client (only on Message\<T>)
+### Client Events
+- `Opened()` When the client connects to the server
+- `Received(byte[] bytes)` When the client receives a bytes from the server
+- `Sent(byte[] bytes)` When the client sends a bytes to the server
+- `Closed()` When the client disconnects from the server
+- `Error(Exception exception)` When there is an exception on the client
