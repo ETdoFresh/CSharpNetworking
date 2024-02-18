@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 using CSharpNetworking;
 
 namespace ExampleTCPServer
 {
     public static class Program
     {
-        private static List<Socket> _clients = new List<Socket>();
+        private static readonly List<SocketStream> Clients = new List<SocketStream>();
         
-        private static async Task Main(string[] args)
+        private static void Main(string[] args)
         {
             var ip = "0.0.0.0";
             var port = 9999;
@@ -30,8 +28,8 @@ namespace ExampleTCPServer
             server.ClientReceived += (client, bytes) => _ = server.SendAsync(client, bytes);
             server.ClientSent += (client, bytes) => Console.WriteLine($"Sent to {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
 
-            server.ClientConnected += (client) => _clients.Add(client);
-            server.ClientDisconnected += (client) => _clients.Remove(client);
+            server.ClientConnected += (client) => Clients.Add(client);
+            server.ClientDisconnected += (client) => Clients.Remove(client);
             
             server.ClientConnected += (client) => _ = server.SendAsync(client, Encoding.UTF8.GetBytes("Welcome to an echo server!"));
 
@@ -42,18 +40,23 @@ namespace ExampleTCPServer
             {
                 var input = Console.ReadLine();
                 if (input == "exit") break;
-                if (IsSendRandomCharactersRequest(input, out var size))
+                if (IsBroadcastRandomCharactersRequest(input, out var size))
                 {
-                    SendRandomCharacters(server, size);
+                    BroadcastRandomCharacters(server, size);
                     continue;
                 }
-                foreach (var client in _clients) 
-                    _ = server.SendAsync(client, input);
+                Broadcast(server, input);
             }
             server.Close();
         }
+        
+        private static void Broadcast(TcpServer server, string message)
+        {
+            foreach (var client in Clients) 
+                _ = server.SendAsync(client, message);
+        }
 
-        private static bool IsSendRandomCharactersRequest(string input, out int size)
+        private static bool IsBroadcastRandomCharactersRequest(string input, out int size)
         {
             size = 16;
             if (!input.StartsWith("random")) return false;
@@ -62,15 +65,14 @@ namespace ExampleTCPServer
             return parts.Length == 2 && int.TryParse(parts[1], out size);
         }
 
-        private static void SendRandomCharacters(TcpServer server, int size)
+        private static void BroadcastRandomCharacters(TcpServer server, int size)
         {
             var random = new Random();
             var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             var bytes = new byte[size];
             for (var i = 0; i < size; i++)
                 bytes[i] = (byte)characters[random.Next(characters.Length)];
-            foreach (var client in _clients) 
-                _ = server.SendAsync(client, bytes);
+            Broadcast(server, Encoding.UTF8.GetString(bytes));
         }
     }
 }

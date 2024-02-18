@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class TcpServer : Server<Socket>
+    public class TcpServer : Server<SocketStream>
     {
         public string HostNameOrAddress { get; }
         public int Port { get; }
@@ -61,59 +61,59 @@ namespace CSharpNetworking
         private async Task AcceptNewClient()
         {
             var socket = await Socket.AcceptAsync();
-            InvokeOpenedEvent(socket);
-            ProcessReceivedData(socket);
+            var stream = new NetworkStream(socket);
+            var client = new SocketStream(socket, stream);
+            InvokeOpenedEvent(client);
+            ProcessReceivedData(client);
         }
 
-        private async void ProcessReceivedData(Socket socket)
+        private async void ProcessReceivedData(SocketStream client)
         {
             var buffer = new byte[2048];
             try
             {
-                var stream = new NetworkStream(socket);
-                while (socket.Connected)
+                while (client.Socket.Connected)
                 {
-                    var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    var bytesRead = await client.Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (bytesRead == 0) break;
                     var incomingBytes = buffer.Take(bytesRead).ToArray();
-                    InvokeReceivedEvent(socket, incomingBytes);
+                    InvokeReceivedEvent(client, incomingBytes);
                 }
             }
             catch (Exception exception)
             {
-                InvokeClientErrorEvent(socket, exception);
+                InvokeClientErrorEvent(client, exception);
             }
             finally
             {
-                ClientDisconnect(socket);
+                ClientDisconnect(client);
             }
         }
 
-        private void ClientDisconnect(Socket socket)
+        private void ClientDisconnect(SocketStream client)
         {
             try
             {
-                if (socket.Connected) socket.Disconnect(false);
-                InvokeClosedEvent(socket);
+                if (client.Socket.Connected) client.Socket.Disconnect(false);
+                InvokeClosedEvent(client);
             }
             catch (Exception exception)
             {
-                InvokeClientErrorEvent(socket, exception);
-                InvokeClosedEvent(socket);
+                InvokeClientErrorEvent(client, exception);
+                InvokeClosedEvent(client);
             }
         }
 
-        public override Task SendAsync(Socket socket, string message)
+        public override Task SendAsync(SocketStream client, string message)
         {
-            return SendAsync(socket, Encoding.UTF8.GetBytes(message));
+            return SendAsync(client, Encoding.UTF8.GetBytes(message));
         }
 
-        public override async Task SendAsync(Socket socket, byte[] bytes)
+        public override async Task SendAsync(SocketStream client, byte[] bytes)
         {
-            var stream = new NetworkStream(socket);
-            await stream.WriteAsync(bytes, 0, bytes.Length);
-            await stream.FlushAsync();
-            InvokeSentEvent(socket, bytes);
+            await client.Stream.WriteAsync(bytes, 0, bytes.Length);
+            await client.Stream.FlushAsync();
+            InvokeSentEvent(client, bytes);
         }
 
         public void Disconnect(Socket socket)

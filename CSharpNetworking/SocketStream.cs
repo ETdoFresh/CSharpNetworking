@@ -8,6 +8,8 @@ namespace CSharpNetworking
         public Stream Stream { get; }
         public Socket Socket { get; }
 
+        public string RemoteEndPoint => Socket.RemoteEndPoint.ToString();
+
         public SocketStream(Socket socket, Stream stream)
         {
             Socket = socket;
