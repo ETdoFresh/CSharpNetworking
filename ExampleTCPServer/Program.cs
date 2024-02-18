@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CSharpNetworking;
 
-namespace Example
+namespace ExampleTCPServer
 {
     public static class Program
     {
