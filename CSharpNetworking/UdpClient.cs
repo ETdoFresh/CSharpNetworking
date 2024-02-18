@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using DotNetUdpClient = System.Net.Sockets.UdpClient;
 
 namespace CSharpNetworking
 {
@@ -13,13 +12,13 @@ namespace CSharpNetworking
     {
         public string HostNameOrAddress { get; }
         public int Port { get; }
-        public DotNetUdpClient DotNetUdpClient { get; }
+        public Socket Socket { get; }
 
         public UdpClient(string hostNameOrAddress, int port, int bufferSize = 2048)
         {
             HostNameOrAddress = hostNameOrAddress;
             Port = port;
-            DotNetUdpClient = new DotNetUdpClient();
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             BufferSize = bufferSize;
         }
 
@@ -40,7 +39,7 @@ namespace CSharpNetworking
                 localEndPoint = new IPEndPoint(ipAddress, Port);
             }
 
-            DotNetUdpClient.Connect(localEndPoint);
+            Socket.Connect(localEndPoint);
             InvokeOpenedEvent();
 
             while (true)
@@ -49,10 +48,10 @@ namespace CSharpNetworking
 
         public override void Close()
         {
-            if (DotNetUdpClient != null)
+            if (Socket != null)
             {
-                DotNetUdpClient.Close();
-                DotNetUdpClient.Dispose();
+                Socket.Close();
+                Socket.Dispose();
             }
             InvokeClosedEvent();
         }
@@ -64,14 +63,16 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(byte[] bytes)
         {
-            await DotNetUdpClient.SendAsync(bytes, bytes.Length);
+            var arraySegment = new ArraySegment<byte>(bytes);
+            await Socket.SendAsync(arraySegment, SocketFlags.None);
             InvokeSentEvent(bytes);
         }
 
         public async Task ReceiveAsync()
         {
-            var result = await DotNetUdpClient.ReceiveAsync();
-            var bytes = result.Buffer;
+            var arraySegment = new ArraySegment<byte>(new byte[BufferSize]);
+            var receivedByteCount = await Socket.ReceiveAsync(arraySegment, SocketFlags.None);
+            var bytes = arraySegment.Take(receivedByteCount).ToArray();
             InvokeReceivedEvent(bytes);
         }
     }

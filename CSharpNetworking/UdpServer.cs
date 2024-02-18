@@ -48,7 +48,7 @@ namespace CSharpNetworking
             InvokeServerOpenedEvent();
             
             while (true)
-                await ReceiveAsync();
+                await ReceiveAsync(localEndPoint);
         }
         
         public override void Close()
@@ -73,12 +73,11 @@ namespace CSharpNetworking
             InvokeClientSentBytesEvent(client, bytes);
         }
         
-        public async Task ReceiveAsync()
+        public async Task ReceiveAsync(EndPoint localEndPoint)
         {
             var buffer = new byte[BufferSize];
             var arraySegment = new ArraySegment<byte>(buffer);
-            var remoteEndPoint = Socket.RemoteEndPoint;
-            var client = await Socket.ReceiveFromAsync(arraySegment, SocketFlags.None, remoteEndPoint);
+            var client = await Socket.ReceiveFromAsync(arraySegment, SocketFlags.None, localEndPoint);
 
             if (IsNewClient(client))
             {
@@ -86,7 +85,8 @@ namespace CSharpNetworking
                 InvokeClientConnectedEvent(client);
             }
             
-            InvokeClientReceivedBytesEvent(client, buffer);
+            var bytes = arraySegment.Take(client.ReceivedBytes).ToArray();
+            InvokeClientReceivedBytesEvent(client, bytes);
         }
         
         public void Disconnect(SocketReceiveFromResult client)
