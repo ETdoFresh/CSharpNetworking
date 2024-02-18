@@ -71,7 +71,7 @@ namespace CSharpNetworking
                 var clientSocket = await ServerSocket.AcceptAsync();
                 var stream = await GetNetworkStream(clientSocket);
                 var client = new SocketStream(clientSocket, stream);
-                InvokeOpenedEvent(client);
+                InvokeClientConnectedEvent(client);
                 StartHandshakeWithClient(client);
             }
         }
@@ -141,7 +141,7 @@ namespace CSharpNetworking
                     if (!WebSocketProtocol.IsDiconnectPacket(rawBytes))
                     {
                         var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes.ToArray());
-                        InvokeReceivedEvent(client, incomingBytes);
+                        InvokeClientReceivedBytesEvent(client, incomingBytes);
                         rawBytes.Clear();
                     }
                     else break; // aka disconnect
@@ -162,12 +162,12 @@ namespace CSharpNetworking
             try
             {
                 if (client.Socket.Connected) client.Socket.Disconnect(false);
-                InvokeClosedEvent(client);
+                InvokeClientDisconnectedEvent(client);
             }
             catch (Exception exception)
             {
                 InvokeClientErrorEvent(client, exception);
-                InvokeClosedEvent(client);
+                InvokeClientDisconnectedEvent(client);
             }
         }
 
@@ -180,7 +180,7 @@ namespace CSharpNetworking
         {
             var rawBytes = WebSocketProtocol.ByteArrayToNetworkBytes(bytes);
             await client.Stream.WriteAsync(rawBytes, 0, rawBytes.Length);
-            InvokeSentEvent(client, bytes);
+            InvokeClientSentBytesEvent(client, bytes);
         }
 
         private async Task<Stream> GetNetworkStream(Socket socket)

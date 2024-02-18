@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Net;
 using System.Net.Sockets;
 
 namespace CSharpNetworking
@@ -8,7 +9,7 @@ namespace CSharpNetworking
         public Stream Stream { get; }
         public Socket Socket { get; }
 
-        public string RemoteEndPoint => Socket.RemoteEndPoint.ToString();
+        public EndPoint RemoteEndPoint => Socket.RemoteEndPoint;
 
         public SocketStream(Socket socket, Stream stream)
         {

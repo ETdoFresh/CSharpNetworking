@@ -25,9 +25,9 @@ namespace ExampleTCPServer
             server.ClientConnected += (client) => Console.WriteLine($"Client connected: {client.RemoteEndPoint}");
             server.ClientDisconnected += (client) => Console.WriteLine($"Client disconnected: {client.RemoteEndPoint}");
             server.ClientError += (client, e) => Console.WriteLine($"Client error: {e.Message}");
-            server.ClientReceived += (client, bytes) => Console.WriteLine($"Received from {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
-            server.ClientReceived += (client, bytes) => _ = server.SendAsync(client, bytes);
-            server.ClientSent += (client, bytes) => Console.WriteLine($"Sent to {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
+            server.ClientReceivedBytes += (client, bytes) => Console.WriteLine($"Received from {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
+            server.ClientReceivedBytes += (client, bytes) => _ = server.SendAsync(client, bytes);
+            server.ClientSentBytes += (client, bytes) => Console.WriteLine($"Sent to {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
 
             server.ClientConnected += (client) => Clients.Add(client);
             server.ClientDisconnected += (client) => Clients.Remove(client);

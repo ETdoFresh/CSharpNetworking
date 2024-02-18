@@ -1,34 +1,30 @@
-﻿using CSharpNetworking;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Net.Sockets;
 using System.Text;
+using CSharpNetworking;
 
-namespace ExampleWebSocketServer
+namespace ExampleUdpServer
 {
     public static class Program
     {
-        private static readonly List<SocketStream> Clients = new List<SocketStream>();
+        private static readonly List<SocketReceiveFromResult> Clients = new List<SocketReceiveFromResult>();
         
         private static void Main(string[] args)
         {
-            var uri = "wss://localhost:11001";
-            var certificate = File.ReadAllBytes("certificate.pfx");
-            var password = "1234";
+            var ip = "0.0.0.0";
+            var port = 9999;
             var bufferSize = 2048;
-            
-            Console.WriteLine($"This is an example WebSocket Server.");
-            Console.WriteLine($"Starting server on {uri}...");
-            
-            // var server = new WebSocketServer(uri, bufferSize); // for "ws://"
-            var server = new WebSocketServer(uri, certificate, password, bufferSize);
+
+            Console.WriteLine($"This is an example UDP Server.");
+            Console.WriteLine($"Starting server on udp://{ip}:{port}..."); 
+
+            var server = new UdpServer(ip, port, bufferSize);
             server.ServerOpened += () => Console.WriteLine("Server started!");
             server.ServerClosed += () => Console.WriteLine("Server stopped!");
             server.ServerError += (e) => Console.WriteLine($"Server error: {e.Message}");
             server.ClientConnected += (client) => Console.WriteLine($"Client connected: {client.RemoteEndPoint}");
             server.ClientDisconnected += (client) => Console.WriteLine($"Client disconnected: {client.RemoteEndPoint}");
-            server.ClientHandshakeReceived += (client) => Console.WriteLine($"Handshake received from {client.RemoteEndPoint}");
-            server.ClientHandshakeSent += (client) => Console.WriteLine($"Handshake sent to {client.RemoteEndPoint}");
             server.ClientError += (client, e) => Console.WriteLine($"Client error: {e.Message}");
             server.ClientReceivedBytes += (client, bytes) => Console.WriteLine($"Received from {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
             server.ClientReceivedBytes += (client, bytes) => _ = server.SendAsync(client, bytes);
@@ -37,8 +33,8 @@ namespace ExampleWebSocketServer
             server.ClientConnected += (client) => Clients.Add(client);
             server.ClientDisconnected += (client) => Clients.Remove(client);
             
-            server.ClientConnected += (client) => _ = server.SendAsync(client, "Welcome to an echo server!");
-            
+            server.ClientConnected += (client) => _ = server.SendAsync(client, Encoding.UTF8.GetBytes("Welcome to an echo server!"));
+
             Console.WriteLine("Submit 'exit' command to stop the server.");
             
             _ = server.OpenAsync();
@@ -56,12 +52,12 @@ namespace ExampleWebSocketServer
             server.Close();
         }
         
-        private static void Broadcast(Server<SocketStream> server, string message)
+        private static void Broadcast(Server<SocketReceiveFromResult> server, string message)
         {
             foreach (var client in Clients) 
                 _ = server.SendAsync(client, message);
         }
-        
+
         private static bool IsBroadcastRandomCharactersRequest(string input, out int size)
         {
             size = 16;
@@ -71,7 +67,7 @@ namespace ExampleWebSocketServer
             return parts.Length == 2 && int.TryParse(parts[1], out size);
         }
 
-        private static void BroadcastRandomCharacters(Server<SocketStream> server, int size)
+        private static void BroadcastRandomCharacters(Server<SocketReceiveFromResult> server, int size)
         {
             var random = new Random();
             var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

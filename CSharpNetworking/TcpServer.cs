@@ -64,7 +64,7 @@ namespace CSharpNetworking
             var socket = await Socket.AcceptAsync();
             var stream = new NetworkStream(socket);
             var client = new SocketStream(socket, stream);
-            InvokeOpenedEvent(client);
+            InvokeClientConnectedEvent(client);
             ProcessReceivedData(client);
         }
 
@@ -78,7 +78,7 @@ namespace CSharpNetworking
                     var bytesRead = await client.Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (bytesRead == 0) break;
                     var incomingBytes = buffer.Take(bytesRead).ToArray();
-                    InvokeReceivedEvent(client, incomingBytes);
+                    InvokeClientReceivedBytesEvent(client, incomingBytes);
                 }
             }
             catch (Exception exception)
@@ -96,12 +96,12 @@ namespace CSharpNetworking
             try
             {
                 if (client.Socket.Connected) client.Socket.Disconnect(false);
-                InvokeClosedEvent(client);
+                InvokeClientDisconnectedEvent(client);
             }
             catch (Exception exception)
             {
                 InvokeClientErrorEvent(client, exception);
-                InvokeClosedEvent(client);
+                InvokeClientDisconnectedEvent(client);
             }
         }
 
@@ -114,7 +114,7 @@ namespace CSharpNetworking
         {
             await client.Stream.WriteAsync(bytes, 0, bytes.Length);
             await client.Stream.FlushAsync();
-            InvokeSentEvent(client, bytes);
+            InvokeClientSentBytesEvent(client, bytes);
         }
 
         public void Disconnect(Socket socket)
