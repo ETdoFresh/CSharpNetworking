@@ -10,7 +10,7 @@ namespace ExampleTCPClient
         {
             var host = "localhost";
             var port = 9999;
-            var bufferSize = 2048 * 2;
+            var bufferSize = 2048;
             
             Console.WriteLine($"This is an example TCP Client. Press any key to connect to tcp://{host}:{port}");
             Console.ReadKey();
