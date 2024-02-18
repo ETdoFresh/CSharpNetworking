@@ -50,7 +50,7 @@ namespace CSharpNetworking
 
         private async Task StartHandshakeWithServer()
         {
-            var httpEOF = Terminator.HTTP_BYTES;
+            var httpEOF = Encoding.UTF8.GetBytes("\r\n\r\n");
             var received = new List<byte>();
             var buffer = new byte[2048];
             var host = uri.Host;
