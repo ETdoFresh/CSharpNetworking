@@ -141,6 +141,7 @@ namespace CSharpNetworking
                     {
                         var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes.ToArray());
                         InvokeReceivedEvent(client, incomingBytes);
+                        rawBytes.Clear();
                     }
                     else break; // aka disconnect
                 }
@@ -176,8 +177,8 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(SocketStream client, byte[] bytes)
         {
-            bytes = WebSocketProtocol.ByteArrayToNetworkBytes(bytes);
-            await client.Stream.WriteAsync(bytes, 0, bytes.Length);
+            var rawBytes = WebSocketProtocol.ByteArrayToNetworkBytes(bytes);
+            await client.Stream.WriteAsync(rawBytes, 0, rawBytes.Length);
             InvokeSentEvent(client, bytes);
         }
 

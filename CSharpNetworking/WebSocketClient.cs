@@ -79,15 +79,16 @@ namespace CSharpNetworking
             var buffer = new byte[BufferSize];
             try
             {
+                var rawBytes = new List<byte>();
                 while (true)
                 {
                     var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    var rawBytes = buffer.Take(bytesRead).ToArray();
-
+                    rawBytes.AddRange(buffer.Take(bytesRead));
                     if (!WebSocketProtocol.IsDiconnectPacket(rawBytes))
                     {
-                        var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes);
+                        var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes.ToArray());
                         InvokeReceivedEvent(incomingBytes);
+                        rawBytes.Clear();
                     }
                     else break; // aka disconnect
                 }

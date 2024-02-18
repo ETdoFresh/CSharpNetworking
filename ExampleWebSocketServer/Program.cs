@@ -30,10 +30,10 @@ namespace ExampleWebSocketServer
             server.ClientHandshakeReceived += (client) => Console.WriteLine($"Handshake received from {client.RemoteEndPoint}");
             server.ClientHandshakeSent += (client) => Console.WriteLine($"Handshake sent to {client.RemoteEndPoint}");
             server.ClientError += (client, e) => Console.WriteLine($"Client error: {e.Message}");
-            server.ClientReceived += (client, bytes) => Console.WriteLine($"Received from {client.RemoteEndPoint}: {bytes.Length} bytes");
+            server.ClientReceived += (client, bytes) => Console.WriteLine($"Received from {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
             server.ClientReceived += (client, bytes) => _ = server.SendAsync(client, bytes);
-            server.ClientSent += (client, bytes) => Console.WriteLine($"Sent to {client.RemoteEndPoint}: {bytes.Length} bytes");
-            
+            server.ClientSent += (client, bytes) => Console.WriteLine($"Sent to {client.RemoteEndPoint}: {Encoding.UTF8.GetString(bytes)} {bytes.Length} bytes");
+
             server.ClientConnected += (client) => Clients.Add(client);
             server.ClientDisconnected += (client) => Clients.Remove(client);
             

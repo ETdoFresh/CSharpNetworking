@@ -158,38 +158,38 @@ namespace CSharpNetworking
             return closeConnectionRequested;
         }
 
-        public static byte[] ByteArrayToNetworkBytes(byte[] originalByteArray, bool masked = true)
+        public static byte[] ByteArrayToNetworkBytes(byte[] bytesOriginal, bool masked = true)
         {
-            var byteArrayCopy = new byte[originalByteArray.Length];
-            originalByteArray.CopyTo(byteArrayCopy, 0);
+            var bytes = new byte[bytesOriginal.Length];
+            bytesOriginal.CopyTo(bytes, 0);
             
             var mask = masked ? 0b_1000_0000 : 0;
 
-            List<byte> bytes;
+            List<byte> bytesList;
 
             // Bit description:
             // 0: Is final fragment of message
             // 1-3: Reserved bits. Must be 0.
             // 4-7: Opcode [0: continue, 1: text, 2: binary, 8: close, 9: ping, 10: pong]
-            bytes = new List<byte> { 0b_1000_0010 };
+            bytesList = new List<byte> { 0b_1000_0010 };
 
             // 8: Maskbit
             // 9-15: Payload Length
             // 16-31: Extended Payload
             // 32-64: Extended Payload 2
-            if (byteArrayCopy.Length < 126)
+            if (bytes.Length < 126)
             {
-                bytes.Add((byte)(byteArrayCopy.Length + mask));
+                bytesList.Add((byte)(bytes.Length + mask));
             }
-            else if (byteArrayCopy.Length < 65536)
+            else if (bytes.Length < 65536)
             {
-                bytes.Add((byte)(126 + mask));
-                bytes.AddRange(BitConverter.GetBytes((ushort)byteArrayCopy.Length).Reverse());
+                bytesList.Add((byte)(126 + mask));
+                bytesList.AddRange(BitConverter.GetBytes((ushort)bytes.Length).Reverse());
             }
-            else if ((ulong)byteArrayCopy.Length <= 18446744073709551615)
+            else if ((ulong)bytes.Length <= 18446744073709551615)
             {
-                bytes.Add((byte)(127 + mask));
-                bytes.AddRange(BitConverter.GetBytes((ulong)byteArrayCopy.Length).Reverse());
+                bytesList.Add((byte)(127 + mask));
+                bytesList.AddRange(BitConverter.GetBytes((ulong)bytes.Length).Reverse());
             }
 
             // +0 or +4: If masked, 4-byte mask
@@ -198,23 +198,26 @@ namespace CSharpNetworking
             {
                 for (int i = 0; i < 4; i++)
                     maskBytes.Add((byte)Random.Next(-128, 128));
-                bytes.AddRange(maskBytes);
+                bytesList.AddRange(maskBytes);
             }
 
             // Mask data if necessary
             if (masked)
-                for (int i = 0; i < byteArrayCopy.Length; i++)
+                for (int i = 0; i < bytes.Length; i++)
                 {
                     var j = i % 4;
-                    byteArrayCopy[i] = (byte)(byteArrayCopy[i] ^ maskBytes[j]);
+                    bytes[i] = (byte)(bytes[i] ^ maskBytes[j]);
                 }
 
-            bytes.AddRange(byteArrayCopy);
-            return bytes.ToArray();
+            bytesList.AddRange(bytes);
+            return bytesList.ToArray();
         }
 
-        public static byte[] NetworkingBytesToByteArray(byte[] bytes)
+        public static byte[] NetworkingBytesToByteArray(byte[] bytesOriginal)
         {
+            var bytes = new byte[bytesOriginal.Length];
+            bytesOriginal.CopyTo(bytes, 0);
+            
             var unmask = (bytes[1] & 0b_1000_0000) > 0;
             long length = bytes[1] & 0b_0111_1111;
             var index = 2;
