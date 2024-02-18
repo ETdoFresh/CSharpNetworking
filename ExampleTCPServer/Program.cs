@@ -51,7 +51,7 @@ namespace ExampleTCPServer
             server.Close();
         }
         
-        private static void Broadcast(TcpServer server, string message)
+        private static void Broadcast(Server<SocketStream> server, string message)
         {
             foreach (var client in Clients) 
                 _ = server.SendAsync(client, message);
@@ -66,7 +66,7 @@ namespace ExampleTCPServer
             return parts.Length == 2 && int.TryParse(parts[1], out size);
         }
 
-        private static void BroadcastRandomCharacters(TcpServer server, int size)
+        private static void BroadcastRandomCharacters(Server<SocketStream> server, int size)
         {
             var random = new Random();
             var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
