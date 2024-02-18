@@ -28,7 +28,7 @@ The Servers in this project use the SocketStream class \<T> to represent a clien
 - `Closed()` When the client disconnects from the server
 - `Error(Exception exception)` When there is an exception on the client
 
-### WebSocket Certificates
+### WebSocket Server Certificates
 A `wss://` connection requires a certificate. In order to generate the missing `certificate.pfx` file, you can follow these steps on Windows:
 
 1. Install/Ensure you have `OpenSSL` installed. If you have chocolatey...
