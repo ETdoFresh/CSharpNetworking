@@ -3,7 +3,7 @@ This project is a basic implementation of these low level networking protocols
 
 - **TCP** (Server and Client)
 - **WebSocket** (Server and Client)
-- ~~**UDP** (Server and Client)~~
+- **UDP** (Server and Client)
 
 ## Abstract Classes
 Each protocol implements abstract class Server or Client which require that the protocol launches the following events when:
@@ -59,3 +59,5 @@ openssl pkcs12 -export -out certificate.pfx -inkey certificate.key -in certifica
 
 ### Caveats
 As shown in the examples, this implementation uses buffers and streams. If the data is larger than the buffer, it will be split into multiple packets. This is not handled in the example, but it is something to be aware of when implementing this in your production environment.
+
+Udp throws an exception when trying to send packets bigger than the buffer size or when sending to a non-existent endpoint. This is not handled in the example, but it is something to be aware of when implementing this in your production environment.
