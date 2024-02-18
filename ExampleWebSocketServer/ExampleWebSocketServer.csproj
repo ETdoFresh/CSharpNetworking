@@ -41,12 +41,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\letsencrypt.pfx">
-      <Link>letsencrypt.pfx</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\localhost.pfx">
-      <Link>localhost.pfx</Link>
+    <None Include="..\certificate.pfx">
+      <Link>certificate.pfx</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="App.config" />

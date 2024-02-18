@@ -27,3 +27,28 @@ The Servers in this project use the SocketStream class \<T> to represent a clien
 - `Sent(byte[] bytes)` When the client sends a bytes to the server
 - `Closed()` When the client disconnects from the server
 - `Error(Exception exception)` When there is an exception on the client
+
+### WebSocket Certificates
+A `wss://` connection requires a certificate. In order to generate the missing `certificate.pfx` file, you can follow these steps on Windows:
+
+1. Install/Ensure you have `OpenSSL` installed. If you have chocolatey...
+```bash
+choco install openssl
+```
+2. Generate private key:  
+```bash
+openssl genrsa -out certificate.key 2048
+```
+3. Generate certificate signing request:  
+```bash
+openssl req -new -key certificate.key -out certificate.csr
+```
+4. Generate self-signed certificate:  
+```bash
+openssl x509 -req -days 365 -in certificate.csr -signkey certificate.key -out certificate.crt
+```
+5. Generate PFX file:  
+```bash
+openssl pkcs12 -export -out certificate.pfx -inkey certificate.key -in certificate.crt
+```
+6. Place the `certificate.pfx` file in root of repository directory

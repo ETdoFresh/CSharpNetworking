@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -15,8 +16,8 @@ namespace CSharpNetworking
     [Serializable]
     public class WebSocketServer : Server<SocketStream>
     {
-        public event Action<SocketStream> handshakeReceived;
-        public event Action<SocketStream> handshakeSent;
+        public event Action<SocketStream> ClientHandshakeReceived;
+        public event Action<SocketStream> ClientHandshakeSent;
 
         public Uri Uri { get; }
         public Socket ServerSocket { get; private set; }
@@ -89,7 +90,7 @@ namespace CSharpNetworking
                     message += Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     if (message.Contains("\r\n\r\n"))
                     {
-                        handshakeReceived?.Invoke(client);
+                        ClientHandshakeReceived?.Invoke(client);
                         if (Regex.IsMatch(message, "^GET", RegexOptions.IgnoreCase))
                         {
                             // 1. Obtain the value of the "Sec-WebSocket-Key" request header without any leading or trailing whitespace
@@ -108,7 +109,7 @@ namespace CSharpNetworking
                                 "Sec-WebSocket-Accept: " + swkaSha1Base64 + "\r\n\r\n";
                             byte[] response = Encoding.UTF8.GetBytes(outgoingMessage);
                             await client.Stream.WriteAsync(response, 0, response.Length);
-                            handshakeSent?.Invoke(client);
+                            ClientHandshakeSent?.Invoke(client);
                         }
                         else
                             throw new Exception("WebSocketServer: Incoming websocket handshake message was not in the right format.");
@@ -130,13 +131,15 @@ namespace CSharpNetworking
             var buffer = new byte[BufferSize];
             try
             {
+                var rawBytes = new List<byte>();
                 while (client.Socket.Connected)
                 {
                     var bytesRead = await client.Stream.ReadAsync(buffer, 0, buffer.Length);
-                    var rawBytes = buffer.Take(bytesRead).ToArray();
+                    rawBytes.AddRange(buffer.Take(bytesRead));
+                    if (rawBytes.Count < 2) continue;
                     if (!WebSocketProtocol.IsDiconnectPacket(rawBytes))
                     {
-                        var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes);
+                        var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes.ToArray());
                         InvokeReceivedEvent(client, incomingBytes);
                     }
                     else break; // aka disconnect

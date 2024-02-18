@@ -9,7 +9,8 @@ namespace ExampleWebSocketClient
     {
         private static async Task Main(string[] args)
         {
-            var uri = "wss://echo.websocket.org";
+            //var uri = "wss://echo.websocket.org";
+            var uri = "wss://localhost:11001";
             var bufferSize = 2048;
             
             Console.WriteLine($"This is an example WebSocket Client. Press any key to connect to {uri}");

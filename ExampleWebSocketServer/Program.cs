@@ -1,6 +1,7 @@
 ﻿using CSharpNetworking;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace ExampleWebSocketServer
@@ -12,17 +13,22 @@ namespace ExampleWebSocketServer
         private static void Main(string[] args)
         {
             var uri = "wss://localhost:11001";
+            var certificate = File.ReadAllBytes("certificate.pfx");
+            var password = "1234";
             var bufferSize = 2048;
             
             Console.WriteLine($"This is an example WebSocket Server.");
             Console.WriteLine($"Starting server on {uri}...");
             
-            var server = new WebSocketServer(uri, bufferSize);
+            // var server = new WebSocketServer(uri, bufferSize); // for "ws://"
+            var server = new WebSocketServer(uri, certificate, password, bufferSize);
             server.ServerOpened += () => Console.WriteLine("Server started!");
             server.ServerClosed += () => Console.WriteLine("Server stopped!");
             server.ServerError += (e) => Console.WriteLine($"Server error: {e.Message}");
             server.ClientConnected += (client) => Console.WriteLine($"Client connected: {client.RemoteEndPoint}");
             server.ClientDisconnected += (client) => Console.WriteLine($"Client disconnected: {client.RemoteEndPoint}");
+            server.ClientHandshakeReceived += (client) => Console.WriteLine($"Handshake received from {client.RemoteEndPoint}");
+            server.ClientHandshakeSent += (client) => Console.WriteLine($"Handshake sent to {client.RemoteEndPoint}");
             server.ClientError += (client, e) => Console.WriteLine($"Client error: {e.Message}");
             server.ClientReceived += (client, bytes) => Console.WriteLine($"Received from {client.RemoteEndPoint}: {bytes.Length} bytes");
             server.ClientReceived += (client, bytes) => _ = server.SendAsync(client, bytes);
