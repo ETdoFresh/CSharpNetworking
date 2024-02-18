@@ -30,7 +30,7 @@ namespace ExampleWebSocketClient
                 if (input == "exit") break;
                 _ = client.SendAsync(input);
             }
-            _ = client.CloseAsync();
+            client.Close();
         }
     }
 }

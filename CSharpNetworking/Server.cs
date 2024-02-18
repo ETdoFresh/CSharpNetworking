@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace CSharpNetworking
 {
-    public abstract class BaseServer<TClient>
+    public abstract class Server<TClient>
     {
         public event Action ServerOpened;
         public event Action ServerClosed;
@@ -15,7 +15,7 @@ namespace CSharpNetworking
         public event Action<TClient, Exception> ClientError;
 
         public abstract Task OpenAsync();
-        public abstract Task CloseAsync();
+        public abstract void Close();
         public abstract Task SendAsync(TClient client, byte[] bytes);
         public abstract Task SendAsync(TClient client, string message);
         

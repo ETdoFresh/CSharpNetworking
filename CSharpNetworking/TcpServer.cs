@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -10,7 +8,7 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class TcpServer : BaseServer<Socket>
+    public class TcpServer : Server<Socket>
     {
         public string HostNameOrAddress { get; }
         public int Port { get; }
@@ -50,7 +48,7 @@ namespace CSharpNetworking
                 await AcceptNewClient();
         }
 
-        public override async Task CloseAsync()
+        public override void Close()
         {
             if (Socket != null)
             {

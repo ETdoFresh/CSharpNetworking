@@ -50,7 +50,7 @@ namespace ExampleTCPServer
                 foreach (var client in _clients) 
                     _ = server.SendAsync(client, input);
             }
-            _ = server.CloseAsync();
+            server.Close();
         }
 
         private static bool IsSendRandomCharactersRequest(string input, out int size)

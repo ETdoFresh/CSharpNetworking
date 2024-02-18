@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CSharpNetworking
 {
-    class WebSocket
+    class WebSocketProtocol
     {
         private static Random Random { get; } = new Random();
 

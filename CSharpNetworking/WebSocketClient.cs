@@ -83,9 +83,9 @@ namespace CSharpNetworking
                     var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                     var rawBytes = buffer.Take(bytesRead).ToArray();
 
-                    if (!WebSocket.IsDiconnectPacket(rawBytes))
+                    if (!WebSocketProtocol.IsDiconnectPacket(rawBytes))
                     {
-                        var incomingBytes = WebSocket.NetworkingBytesToByteArray(rawBytes);
+                        var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes);
                         InvokeReceivedEvent(incomingBytes);
                     }
                     else break; // aka disconnect
@@ -97,7 +97,7 @@ namespace CSharpNetworking
             }
             finally
             {
-                CloseAsync();
+                Close();
             }
         }
 
@@ -108,17 +108,16 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(byte[] bytes)
         {
-            var webSocketBytes = WebSocket.ByteArrayToNetworkBytes(bytes);
+            var webSocketBytes = WebSocketProtocol.ByteArrayToNetworkBytes(bytes);
             await stream.WriteAsync(webSocketBytes, 0, webSocketBytes.Length);
             InvokeSentEvent(bytes);
         }
 
-        public override async Task CloseAsync()
+        public override void Close()
         {
             try
             {
-                if (socket.Connected)
-                    socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
+                if (socket.Connected) socket.Disconnect(false);
                 InvokeClosedEvent();
             }
             catch (Exception exception)

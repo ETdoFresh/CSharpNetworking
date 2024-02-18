@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -14,14 +13,15 @@ using System.Threading.Tasks;
 namespace CSharpNetworking
 {
     [Serializable]
-    public class WebSocketServer : BaseServer<SocketStream>
+    public class WebSocketServer : Server<SocketStream>
     {
         private enum StreamType { Unsecured, SecuredLocalhost, SecuredRemote }
-
-        public Action handshakeReceived;
+        
+        public event Action handshakeReceived;
+        public event Action handshakeSent;
         
         public Uri uri;
-        public Socket socket;
+        public Socket serverSocket;
         
         public WebSocketServer(string uriString)
         {
@@ -41,19 +41,19 @@ namespace CSharpNetworking
                 var ipAddress = ipHostInfo.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
                 localEndPoint = new IPEndPoint(ipAddress, port);
             }
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(localEndPoint);
-            socket.Listen(100);
+            serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            serverSocket.Bind(localEndPoint);
+            serverSocket.Listen(100);
             InvokeServerOpenedEvent();
             await AcceptNewClientAsync();
         }
 
-        public override async Task CloseAsync()
+        public override void Close()
         {
-            if (socket != null)
+            if (serverSocket != null)
             {
-                socket.Close();
-                socket.Dispose();
+                serverSocket.Close();
+                serverSocket.Dispose();
             }
             InvokeServerClosedEvent();
         }
@@ -62,7 +62,7 @@ namespace CSharpNetworking
         {
             while (true)
             {
-                var clientSocket = await socket.AcceptAsync();
+                var clientSocket = await serverSocket.AcceptAsync();
                 var stream = GetNetworkStream(clientSocket);
                 var client = new SocketStream(clientSocket, stream);
                 InvokeOpenedEvent(client);
@@ -75,17 +75,16 @@ namespace CSharpNetworking
             try
             {
                 var message = "";
-                while (client.socket.Connected)
+                while (client.Socket.Connected)
                 {
                     var buffer = new byte[2048];
-                    var bytesRead = await client.stream.ReadAsync(buffer, 0, buffer.Length);
+                    var bytesRead = await client.Stream.ReadAsync(buffer, 0, buffer.Length);
                     if (bytesRead == 0) break;
 
                     message += Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     if (message.Contains(Terminator.HTTP))
                     {
-                        Console.WriteLine($"WebSocketServer: A HandShake received from {client.IP}:{client.Port}...");
-                        //var messages = message.Split(new[] { HTTP_TERMINATOR }, StringSplitOptions.RemoveEmptyEntries);
+                        handshakeReceived?.Invoke();
                         if (Regex.IsMatch(message, "^GET", RegexOptions.IgnoreCase))
                         {
                             // 1. Obtain the value of the "Sec-WebSocket-Key" request header without any leading or trailing whitespace
@@ -103,8 +102,8 @@ namespace CSharpNetworking
                                 "Upgrade: websocket\r\n" +
                                 "Sec-WebSocket-Accept: " + swkaSha1Base64 + "\r\n\r\n";
                             byte[] response = Encoding.UTF8.GetBytes(outgoingMessage);
-                            Console.WriteLine($"WebSocketServer: Replying to HandShake for {client.IP}:{client.Port}...");
-                            await client.stream.WriteAsync(response, 0, response.Length);
+                            await client.Stream.WriteAsync(response, 0, response.Length);
+                            handshakeSent?.Invoke();
                         }
                         else
                             throw new Exception("WebSocketServer: Incoming websocket handshake message was not in the right format.");
@@ -123,26 +122,17 @@ namespace CSharpNetworking
 
         private async void ProcessReceivedData(SocketStream client)
         {
-            var receivedBytes = new List<byte>();
             var buffer = new byte[2048];
             try
             {
-                while (client.socket.Connected)
+                while (client.Socket.Connected)
                 {
-                    var bytesRead = await client.stream.ReadAsync(buffer, 0, buffer.Length);
-                    var incomingBytes = buffer.Take(bytesRead);
-                    receivedBytes.AddRange(incomingBytes);
-                    if (!WebSocket.IsDiconnectPacket(receivedBytes))
+                    var bytesRead = await client.Stream.ReadAsync(buffer, 0, buffer.Length);
+                    var rawBytes = buffer.Take(bytesRead).ToArray();
+                    if (!WebSocketProtocol.IsDiconnectPacket(rawBytes))
                     {
-                        var terminatorBytes = Terminator.VALUE_BYTES;
-                        var terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
-                        while (terminatorIndex != -1)
-                        {
-                            var messageBytes = receivedBytes.GetRange(0, terminatorIndex).ToArray();
-                            InvokeReceivedEvent(client, messageBytes);
-                            receivedBytes.RemoveRange(0, terminatorIndex + terminatorBytes.Length);
-                            terminatorIndex = receivedBytes.IndexOf(terminatorBytes);
-                        }
+                        var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes);
+                        InvokeReceivedEvent(client, incomingBytes);
                     }
                     else break; // aka disconnect
                 }
@@ -161,7 +151,7 @@ namespace CSharpNetworking
         {
             try
             {
-                if (client.socket.Connected) client.socket.Disconnect(false);
+                if (client.Socket.Connected) client.Socket.Disconnect(false);
                 InvokeClosedEvent(client);
             }
             catch (Exception exception)
@@ -178,8 +168,8 @@ namespace CSharpNetworking
 
         public override async Task SendAsync(SocketStream client, byte[] bytes)
         {
-            bytes = WebSocket.ByteArrayToNetworkBytes(bytes);
-            await client.stream.WriteAsync(bytes, 0, bytes.Length);
+            bytes = WebSocketProtocol.ByteArrayToNetworkBytes(bytes);
+            await client.Stream.WriteAsync(bytes, 0, bytes.Length);
             InvokeSentEvent(client, bytes);
         }
 

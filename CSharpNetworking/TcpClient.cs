@@ -63,7 +63,7 @@ namespace CSharpNetworking
             }
             finally
             {
-                await CloseAsync();
+                Close();
             }
         }
 
@@ -79,12 +79,11 @@ namespace CSharpNetworking
             InvokeSentEvent(bytes);
         }
 
-        public override async Task CloseAsync()
+        public override void Close()
         {
             try
             {
-                if (Socket.Connected)
-                    Socket.DisconnectAsync(new SocketAsyncEventArgs { DisconnectReuseSocket = false });
+                if (Socket.Connected) Socket.Disconnect(false);
                 InvokeClosedEvent();
             }
             catch (Exception exception)

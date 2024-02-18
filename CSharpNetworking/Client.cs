@@ -12,7 +12,7 @@ namespace CSharpNetworking
         public event Action<Exception> Error;
 
         public abstract Task OpenAsync();
-        public abstract Task CloseAsync();
+        public abstract void Close();
         public abstract Task SendAsync(byte[] bytes);
         public abstract Task SendAsync(string message);
         
