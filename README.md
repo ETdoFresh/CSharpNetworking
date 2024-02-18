@@ -1,5 +1,5 @@
 # C# Networking
-This project is the basic implementation of these low level networking protocols
+This project is a basic implementation of these low level networking protocols
 
 - **TCP** (Server and Client)
 - **WebSocket** (Server and Client)
@@ -19,7 +19,7 @@ Each protocol implements abstract class Server or Client which require that the 
 - `ClientError(T client, Exception exception)` When there is an exception with the client connection
 
 ### SocketStream Class
-The Servers in this project use the SocketStream class \<T> to represent a client connection. It includes the client's Socket and NetworkStream.
+The Servers in this project use `SocketStream` class as _T_ to represent a client connection. It includes the client's _Socket_ and _NetworkStream_.
 
 ### Client Events
 - `Opened()` When the client connects to the server
