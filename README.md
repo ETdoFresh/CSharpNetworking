@@ -58,4 +58,4 @@ openssl pkcs12 -export -out certificate.pfx -inkey certificate.key -in certifica
    3. `Place all certificates in the following store`: `Trusted Root Certification Authorities`
 
 ### Caveats
-As shown in the examples, this implementation uses buffers and streams. If the data is larger than the buffer, it will be split into multiple packets. This is not handled in the example, but it is something to be aware of when implementing this in a production environment.
+As shown in the examples, this implementation uses buffers and streams. If the data is larger than the buffer, it will be split into multiple packets. This is not handled in the example, but it is something to be aware of when implementing this in your production environment.
