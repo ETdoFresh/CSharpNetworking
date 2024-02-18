@@ -56,3 +56,6 @@ openssl pkcs12 -export -out certificate.pfx -inkey certificate.key -in certifica
    1. Double click on the `certificate.pfx` file
    2. Store Location: `Local Machine`
    3. `Place all certificates in the following store`: `Trusted Root Certification Authorities`
+
+### Caveats
+As shown in the example, this implementation uses buffers and streams. If the data is larger than the buffer, it will be split into multiple packets. This is not handled in the example, but it is something to be aware of when implementing this in a production environment.
