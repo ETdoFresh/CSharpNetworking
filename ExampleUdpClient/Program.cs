@@ -17,8 +17,8 @@ namespace ExampleUdpClient
             Console.ReadKey();
 
             var client = new UdpClient(host, port, bufferSize);
-            client.Opened += () => Console.WriteLine("Connected to peer");
-            client.Closed += () => Console.WriteLine("Disconnected from peer");
+            client.Opened += () => Console.WriteLine("Connected to Server");
+            client.Closed += () => Console.WriteLine("Disconnected from Server");
             client.Error += e => Console.WriteLine($"Error: {e.Message}");
             client.Received += bytes => Console.WriteLine($"Received: {Encoding.UTF8.GetString(bytes)}");
             client.Sent += bytes => Console.WriteLine($"Sent: {Encoding.UTF8.GetString(bytes)}");
