@@ -84,6 +84,8 @@ namespace CSharpNetworking
                 {
                     var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                     rawBytes.AddRange(buffer.Take(bytesRead));
+                    if (rawBytes.Count < 2) continue;
+                    if ((ulong)rawBytes.Count < WebSocketProtocol.PacketLength(rawBytes)) continue;
                     if (!WebSocketProtocol.IsDiconnectPacket(rawBytes))
                     {
                         var incomingBytes = WebSocketProtocol.NetworkingBytesToByteArray(rawBytes.ToArray());

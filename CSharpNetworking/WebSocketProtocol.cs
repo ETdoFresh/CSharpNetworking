@@ -66,41 +66,41 @@ namespace CSharpNetworking
             return bytes.ToArray();
         }
 
-        public static long PacketLength(IEnumerable<byte> bytes)
+        public static ulong PacketLength(IEnumerable<byte> bytes)
         {
             var length = PayloadLength(bytes);
             if (length == long.MaxValue) return length;
 
-            var packetHeader = 2;
+            const ulong packetHeader = 2;
 
-            var lengthOffset = 0;
+            ulong lengthOffset = 0;
             if (length < 126) lengthOffset = 0;
             else if (length < 65536) lengthOffset = 2;
             else lengthOffset = 8;
 
             var masked = (bytes.ToArray()[1] & 0b_1000_0000) > 0;
-            var maskOffset = masked ? 4 : 0;
+            var maskOffset = (ulong)(masked ? 4 : 0);
 
             return packetHeader + lengthOffset + maskOffset + length;
         }
 
-        public static long PayloadLength(IEnumerable<byte> bytes)
+        public static ulong PayloadLength(IEnumerable<byte> bytes)
         {
             if (bytes.Count() < 3)
                 return long.MaxValue;
 
-            long length = bytes.ElementAt(1) & 0b_0111_1111;
+            var length = (ulong)(bytes.ElementAt(1) & 0b_0111_1111);
             var index = 2;
 
             if (length == 126)
             {
                 var shrt = bytes.Skip(index).Take(2).Reverse().ToArray();
-                return BitConverter.ToInt16(shrt, 0);
+                return BitConverter.ToUInt16(shrt, 0);
             }
             if (length == 127)
             {
                 var lng = bytes.Skip(index).Take(8).Reverse().ToArray();
-                return BitConverter.ToInt64(lng, 0);
+                return BitConverter.ToUInt64(lng, 0);
             }
             else
                 return length;
@@ -219,18 +219,18 @@ namespace CSharpNetworking
             bytesOriginal.CopyTo(bytes, 0);
             
             var unmask = (bytes[1] & 0b_1000_0000) > 0;
-            long length = bytes[1] & 0b_0111_1111;
+            var length = (ulong)(bytes[1] & 0b_0111_1111);
             var index = 2;
             if (length == 126)
             {
                 var shrt = bytes.Skip(index).Take(2).Reverse().ToArray();
-                length = BitConverter.ToInt16(shrt, 0);
+                length = BitConverter.ToUInt16(shrt, 0);
                 index += 2;
             }
             if (length == 127)
             {
                 var lng = bytes.Skip(index).Take(8).Reverse().ToArray();
-                length = BitConverter.ToInt64(lng, 0);
+                length = BitConverter.ToUInt64(lng, 0);
                 index += 8;
             }
 
@@ -242,11 +242,11 @@ namespace CSharpNetworking
             index += unmask ? 4 : 0;
 
             var byteArray = new List<byte>();
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < (int)length; i++)
                 byteArray.Add(bytes[index + i]);
 
             if (unmask)
-                for (int i = 0; i < length; i++)
+                for (var i = 0; i < (int)length; i++)
                 {
                     var j = i % 4;
                     byteArray[i] = (byte)(byteArray[i] ^ maskBytes[j]);
