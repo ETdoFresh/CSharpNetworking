@@ -2,7 +2,7 @@
 This project is the basic implementation of these low level networking protocols
 
 - **TCP** (Server and Client)
-- **WebSocket** (~~Server and~~ Client)
+- **WebSocket** (Server and Client)
 - ~~**UDP** (Server and Client)~~
 
 ## Abstract Classes
