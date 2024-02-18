@@ -83,7 +83,7 @@ namespace CSharpNetworking
                     if (bytesRead == 0) break;
 
                     message += Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    if (message.Contains(Terminator.HTTP))
+                    if (message.Contains("\r\n\r\n"))
                     {
                         handshakeReceived?.Invoke();
                         if (Regex.IsMatch(message, "^GET", RegexOptions.IgnoreCase))
