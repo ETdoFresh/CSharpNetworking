@@ -12,7 +12,8 @@ namespace ExampleUdpClient
             var port = 9999;
             var bufferSize = 2048;
             
-            Console.WriteLine($"This is an example TCP Client. Press any key to connect to tcp://{host}:{port}");
+            Console.WriteLine($"This is an example UDP Client.");
+            Console.WriteLine($"Press any key to connect to udp://{host}:{port}");
             Console.ReadKey();
 
             var client = new UdpClient(host, port, bufferSize);
