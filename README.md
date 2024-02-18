@@ -52,3 +52,7 @@ openssl x509 -req -days 365 -in certificate.csr -signkey certificate.key -out ce
 openssl pkcs12 -export -out certificate.pfx -inkey certificate.key -in certificate.crt
 ```
 6. Place the `certificate.pfx` file in root of repository directory
+7. Additionally, you have to let Windows know this is a trusted certificate.
+   1. Double click on the `certificate.pfx` file
+   2. Store Location: `Local Machine`
+   3. `Place all certificates in the following store`: `Trusted Root Certification Authorities`
